@@ -12,13 +12,9 @@ int main(void)
     const uint32_t testValue = 0x12345678;
 
     RiscMemoryInitialize(&memory, RISC_MEMORY_DEFAULT_BASE, RISC_MEMORY_DEFAULT_SIZE);
+    RiscCpuInitialize(&cpu, &memory);
 
-    RiscMemoryWrite(&memory, 0x00, DWORD, testValue);
-
-    uint32_t value;
-    RiscMemoryRead(&memory, 0x00, DWORD, &value);
-
-    assert(testValue == value);
+    RiscCpuExecute(&cpu);
 
     return 0;
 }

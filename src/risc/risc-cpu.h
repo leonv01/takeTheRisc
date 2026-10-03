@@ -43,22 +43,12 @@ int RiscCpuInitialize(risc_cpu_t *cpu, risc_memory_t *memory);
 int RiscCpuDestroy(risc_cpu_t *cpu);
 
 /**
- * @brief Fetches next instruction
- * 
- * @param cpu 
- * @param instruction instruction pointer
- * @return int status code
- */
-int RiscCpuFetch(risc_cpu_t *cpu, uint32_t *instruction);
-
-/**
  * @brief Executes next instruction
  * 
  * @param cpu 
- * @param op opcode to be executed
  * @return int status code
  */
-int RiscCpuExecute(risc_cpu_t *cpu, uint32_t op);
+int RiscCpuExecute(risc_cpu_t *cpu);
 
 /* -------------------------------------------------------------------------- */
 /*                           Instruction operations                           */
