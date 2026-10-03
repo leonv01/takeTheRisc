@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include "risc/risc-memory.h"
+
 #define RISC_INSTRUCTION_32I_COUNT 32
 #define RISC_INSTRUCTION_HANDLER_COUNT_32I_COUNT 32
 
@@ -17,6 +19,7 @@ typedef struct risc_cpu_t
 
     InstructionTypeHandler instructionTypeHandler[RISC_INSTRUCTION_HANDLER_COUNT_32I_COUNT];
 
+    risc_memory_t *memory;
 } risc_cpu_t;
 
 /* -------------------------------------------------------------------------- */
@@ -29,7 +32,7 @@ typedef struct risc_cpu_t
  * @param cpu 
  * @return int status code
  */
-int RiscCpuInitialize(risc_cpu_t *cpu);
+int RiscCpuInitialize(risc_cpu_t *cpu, risc_memory_t *memory);
 
 /**
  * @brief Destroys CPU and frees memory

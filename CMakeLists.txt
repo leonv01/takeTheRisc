@@ -16,9 +16,32 @@ endif()
 
 # Include necessary directories
 include_directories(src)
+#include_directories(extern/unity/src)
+add_subdirectory(extern/unity EXCLUDE_FROM_ALL)
+
+# Enable CTest
+enable_testing()
 
 file(GLOB_RECURSE APP_SOURCES
-        src/*.c
+    src/*.c
 )
 
 add_executable(TakeTheRisc ${APP_SOURCES})
+
+add_executable(test_memory_read
+    tests/memory/test_memory_read.c
+    src/risc/risc-memory.c
+)
+
+add_executable(test_memory_write
+    tests/memory/test_memory_write.c
+    src/risc/risc-memory.c
+)
+
+target_include_directories(test_memory_read PRIVATE src)
+target_include_directories(test_memory_write PRIVATE src)
+target_link_libraries(test_memory_read PRIVATE unity)
+target_link_libraries(test_memory_write PRIVATE unity)
+
+add_test(NAME test_memory_read COMMAND test_memory_read)
+add_test(NAME test_memory_write COMMAND test_memory_read)
