@@ -5,7 +5,6 @@ project(TakeTheRisc C)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED True)
 
-
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
 endif()
@@ -14,34 +13,29 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g")
 endif()
 
-# Include necessary directories
-include_directories(src)
-#include_directories(extern/unity/src)
+# Add Unity testing framework
 add_subdirectory(extern/unity EXCLUDE_FROM_ALL)
+
+# Core emulator library 
+file(GLOB_RECURSE CORE_SOURCES CONFIGURE_DEPENDS "src/risc/*.c")
+add_library(risc_core STATIC ${CORE_SOURCES})
+target_include_directories(risc_core PUBLIC src)
+
+# Main executable
+add_executable(TakeTheRisc src/main.c)
+target_link_libraries(TakeTheRisc PRIVATE risc_core)
 
 # Enable CTest
 enable_testing()
 
-file(GLOB_RECURSE APP_SOURCES
-    src/*.c
-)
+# Automatically discover and register all tests in tests/
+file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "tests/*.c")
 
-add_executable(TakeTheRisc ${APP_SOURCES})
+foreach(TEST_SOURCE ${TEST_SOURCES})
+    get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
 
-add_executable(test_memory_read
-    tests/memory/test_memory_read.c
-    src/risc/risc-memory.c
-)
+    add_executable(${TEST_NAME} ${TEST_SOURCE})
+    target_link_libraries(${TEST_NAME} PRIVATE risc_core unity)
 
-add_executable(test_memory_write
-    tests/memory/test_memory_write.c
-    src/risc/risc-memory.c
-)
-
-target_include_directories(test_memory_read PRIVATE src)
-target_include_directories(test_memory_write PRIVATE src)
-target_link_libraries(test_memory_read PRIVATE unity)
-target_link_libraries(test_memory_write PRIVATE unity)
-
-add_test(NAME test_memory_read COMMAND test_memory_read)
-add_test(NAME test_memory_write COMMAND test_memory_write)
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+endforeach()
