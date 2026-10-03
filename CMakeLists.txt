@@ -44,4 +44,4 @@ target_link_libraries(test_memory_read PRIVATE unity)
 target_link_libraries(test_memory_write PRIVATE unity)
 
 add_test(NAME test_memory_read COMMAND test_memory_read)
-add_test(NAME test_memory_write COMMAND test_memory_read)
+add_test(NAME test_memory_write COMMAND test_memory_write)

@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    name: Build & Test (${{ matrix.compiler }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive # Required for extern/unity
+
+      - name: Configure CMake
+        run: >
+          cmake -B build
+          -DCMAKE_C_COMPILER=${{ matrix.compiler }}
+          -DCMAKE_BUILD_TYPE=Debug
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Run Tests
+        run: ctest --test-dir build --output-on-failure
+
+  sanitizer:
+    name: Memory & Undefined Behavior Sanitizer
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure with ASan & UBSan
+        run: >
+          cmake -B build
+          -DCMAKE_C_COMPILER=gcc
+          -DCMAKE_C_FLAGS="-fsanitize=address,undefined -g"
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Run Tests
+        run: ctest --test-dir build --output-on-failure
