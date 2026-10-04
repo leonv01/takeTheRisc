@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "risc/risc-memory.h"
+#include "risc/risc_memory.h"
 
 #define RISC_INSTRUCTION_32I_COUNT 32
 #define RISC_INSTRUCTION_HANDLER_COUNT_32I_COUNT 32

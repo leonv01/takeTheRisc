@@ -1,5 +1,5 @@
-#include "risc/risc-cpu.h"
-#include "risc/risc-memory.h"
+#include "risc/risc_cpu.h"
+#include "risc/risc_memory.h"
 
 #include <string.h>
 

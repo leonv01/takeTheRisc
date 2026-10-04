@@ -21,9 +21,14 @@ file(GLOB_RECURSE CORE_SOURCES CONFIGURE_DEPENDS "src/risc/*.c")
 add_library(risc_core STATIC ${CORE_SOURCES})
 target_include_directories(risc_core PUBLIC src)
 
+# Tools emulator library 
+file(GLOB_RECURSE TOOL_SOURCES CONFIGURE_DEPENDS "src/tools/*.c")
+add_library(risc_tools STATIC ${TOOL_SOURCES})
+target_include_directories(risc_tools PUBLIC src)
+
 # Main executable
 add_executable(TakeTheRisc src/main.c)
-target_link_libraries(TakeTheRisc PRIVATE risc_core)
+target_link_libraries(TakeTheRisc PRIVATE risc_core risc_tools)
 
 # Enable CTest
 enable_testing()

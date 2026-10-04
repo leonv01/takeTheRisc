@@ -1,0 +1,17 @@
+services:
+  riscv-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: risc-toolchain:latest
+    container_name: risc-test-runner
+    working_dir: /workspace
+    volumes:
+      - ../..:/workspace:z
+    environment:
+      - RISCV_TESTS=/opt/riscv-tests/isa
+      - TERM=xterm-256color
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+

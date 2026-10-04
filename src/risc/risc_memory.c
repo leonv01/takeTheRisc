@@ -1,4 +1,4 @@
-#include "risc-memory.h"
+#include "risc_memory.h"
 
 #include <string.h>
 #include <stdlib.h>

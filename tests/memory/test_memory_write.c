@@ -1,5 +1,5 @@
 #include "unity.h"
-#include "risc/risc-memory.h"
+#include "risc/risc_memory.h"
 
 void setUp(void)
 {
