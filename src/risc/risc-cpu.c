@@ -41,8 +41,8 @@ int RiscCpuInitialize(risc_cpu_t *cpu, risc_memory_t *memory)
     cpu->instructionTypeHandler[0b00000] = &RiscOpLoad;
     cpu->instructionTypeHandler[0b01000] = &RiscOpStore;
     cpu->instructionTypeHandler[0b11000] = &RiscOpBranch;
-    cpu->instructionTypeHandler[0b11011] = &RiscOpJump;
-    cpu->instructionTypeHandler[0b11001] = &RiscOpJump;
+    cpu->instructionTypeHandler[0b11011] = &RiscOpJumpJ;
+    cpu->instructionTypeHandler[0b11001] = &RiscOpJumpI;
     cpu->instructionTypeHandler[0b01101] = &RiscOpUpperImm;
     cpu->instructionTypeHandler[0b11100] = &RiscOpSystem;
 
@@ -73,41 +73,340 @@ int RiscCpuExecute(risc_cpu_t *cpu)
 
 int RiscOpArithmeticR(risc_cpu_t *cpu, uint32_t instruction)
 {
-    return 0;
+    uint32_t funct3 = InstructionGetFunct3(instruction);
+    uint32_t funct7 = InstructionGetFunct7(instruction);
+    uint32_t rd = InstructionGetRd(instruction);
+    uint32_t rs1 = InstructionGetRs1(instruction);
+    uint32_t rs2 = InstructionGetRs2(instruction);
+
+    uint32_t funct10 = funct7 << 3 | funct3;
+
+    uint32_t *reg = &cpu->registers[0];
+
+    int status = 0;
+
+    switch (funct10)
+    {
+        case 0b0000000000:
+            // Add
+            reg[rd] = reg[rs1] + reg[rs2];
+            break;
+        case 0b0100000000:
+            // Sub
+            reg[rd] = reg[rs1] - reg[rs2];
+            break;
+        case 0b0000000111:
+            // And
+            reg[rd] = reg[rs1] & reg[rs2];
+            break;
+        case 0b0000000110:
+            // Or
+            reg[rd] = reg[rs1] | reg[rs2];
+            break;
+        case 0b0000000100:
+            // Xor
+            reg[rd] = reg[rs1] ^ reg[rs2];
+            break;
+        case 0b0000000001:
+            // Shift left
+            reg[rd] = reg[rs1] << reg[rs2];
+            break;
+        case 0b0000000101:
+            // Shift right logical
+            reg[rd] = reg[rs1] >> reg[rs2];
+            break;
+        case 0b0100000101:
+            // Shift right arithmetic
+            reg[rd] = reg[rs1] >> reg[rs2];
+            break;
+        case 0b0000000010:
+            // Less than (signed)
+            if ((int32_t) reg[rs1] < (int32_t) reg[rs2]) 
+            {
+                reg[rd] = 1;
+            }
+            else 
+            {
+                reg[rd] = 0;
+            }
+            break;
+        case 0b0000000011:
+            // Less than (unsigned)
+            if (reg[rs1] < reg[rs2]) 
+            {
+                reg[rd] = 1;
+            }
+            else 
+            {
+                reg[rd] = 0;
+            }
+            break;
+        default:
+            status = 1;
+            break;
+    }
+
+    return status;
 }
 
 int RiscOpArithmeticI(risc_cpu_t *cpu, uint32_t instruction)
 {
-    return 0;
+    uint32_t funct3 = InstructionGetFunct3(instruction);
+    uint32_t funct7 = InstructionGetFunct7(instruction);
+    uint32_t rd = InstructionGetRd(instruction);
+    uint32_t rs1 = InstructionGetRs1(instruction);
+    uint32_t imm = InstructionGetImmI(instruction);
+
+    uint32_t funct10 = funct7 << 3 | funct3;
+
+    uint32_t *reg = &cpu->registers[0];
+
+    int status = 0;
+
+    switch (funct10)
+    {
+        case 0b000:
+            // Add
+            reg[rd] = reg[rs1] + imm;
+            break;
+        case 0b111:
+            // And
+            reg[rd] = reg[rs1] & imm;
+            break;
+        case 0b110:
+            // Or
+            reg[rd] = reg[rs1] | imm;
+            break;
+        case 0b100:
+            // Xor
+            reg[rd] = reg[rs1] ^ imm;
+            break;
+        case 0b010:
+            // Less than (signed)
+            if ((int32_t) reg[rs1] < imm) 
+            {
+                reg[rd] = 1;
+            }
+            else 
+            {
+                reg[rd] = 0;
+            }
+            break;
+        case 0b011:
+            // Less than (unsigned)
+            if (reg[rs1] < imm) 
+            {
+                reg[rd] = 1;
+            }
+            else 
+            {
+                reg[rd] = 0;
+            }
+            break;
+        case 0b001:
+            // Shift left
+            reg[rd] = reg[rs1] << imm;
+            break;
+        case 0b101:
+            // Shift right logical (zero-extend)
+            reg[rd] = reg[rs1] >> imm;
+            break;
+        case 0b100000101:
+            // Shift right arithmetic (sign-extend)
+            reg[rd] = reg[rs1] >> imm;
+            break;
+        default:
+            status = 1;
+            break;
+    }
+
+    return status;
 }
 
 int RiscOpLoad(risc_cpu_t *cpu, uint32_t instruction)
 {
-    return 0;
+    uint32_t imm = InstructionGetImmI(instruction);
+    uint32_t funct3 = InstructionGetFunct3(instruction);
+    uint32_t rd = InstructionGetRd(instruction);
+    uint32_t rs1 = InstructionGetRs1(instruction);
+
+    uint32_t *reg = &cpu->registers[0];
+
+    uint32_t data = 0;
+
+    uint32_t address = reg[rs1] + imm;
+
+    int status = 0;
+
+    switch (funct3)
+    {
+        case 0b000:
+            status = RiscMemoryRead(cpu->memory, address, BYTE, &data);
+            reg[rd] = (int32_t) data;
+            break;
+        case 0b100:
+            status = RiscMemoryRead(cpu->memory, address, BYTE, &data);
+            reg[rd] = data;
+            break;
+        case 0b001:
+            status = RiscMemoryRead(cpu->memory, address, WORD, &data);
+            reg[rd] = (int32_t) data;
+            break;
+        case 0b101:
+            status = RiscMemoryRead(cpu->memory, address, WORD, &data);
+            reg[rd] = data;
+            break;
+        case 0b010:
+            status = RiscMemoryRead(cpu->memory, address, DWORD, &data);
+            reg[rd] = data;
+            break;
+        default:
+            status = 1;
+            break;
+        }
+
+    return status;
 }
 
 int RiscOpStore(risc_cpu_t *cpu, uint32_t instruction)
 {
-    return 0;
+    uint32_t imm = InstructionGetImmI(instruction);
+    uint32_t funct3 = InstructionGetFunct3(instruction);
+    uint32_t rs1 = InstructionGetRs1(instruction);
+    uint32_t rs2 = InstructionGetRs2(instruction);
+
+    uint32_t *reg = &cpu->registers[0];
+
+    uint32_t address = reg[rs1] + imm;
+
+    int status = 0;
+
+    switch (funct3)
+    {
+        case 0b000:
+            status = RiscMemoryWrite(cpu->memory, address, BYTE, reg[rs2]);
+            break;
+        case 0b001:
+            status = RiscMemoryWrite(cpu->memory, address, WORD, reg[rs2]);
+            break;
+        case 0b010:
+            status = RiscMemoryWrite(cpu->memory, address, DWORD, reg[rs2]);
+            break;
+        default:
+            status = 1;
+            break;
+        }
+
+    return status;
 }
 
 int RiscOpBranch(risc_cpu_t *cpu, uint32_t instruction)
 {
+    uint32_t imm = InstructionGetImmB(instruction);
+    uint32_t funct3 = InstructionGetFunct3(instruction);
+    uint32_t rs1 = InstructionGetRs1(instruction);
+    uint32_t rs2 = InstructionGetRs2(instruction);
+
+    uint32_t *reg = &cpu->registers[0];
+
+    int status = 0;
+
+    switch (funct3)
+    {
+        case 0b000:
+            if (reg[rs1] == reg[rs2])
+            {
+                cpu->pc += imm;
+            }
+            break;
+        case 0b001:
+            if (reg[rs1] != reg[rs2])
+            {
+                cpu->pc += imm;
+            }
+            break;
+        case 0b100:
+            if ((int32_t) reg[rs1] < (int32_t) reg[rs2])
+            {
+                cpu->pc += imm;
+            }
+            break;
+        case 0b110:
+            if (reg[rs1] < reg[rs2])
+            {
+                cpu->pc += imm;
+            }
+            break;
+        case 0b101:
+            if ((int32_t) reg[rs1] >= (int32_t) reg[rs2])
+            {
+                cpu->pc += imm;
+            }
+            break;
+        case 0b111:
+            if (reg[rs1] >= reg[rs2])
+            {
+                cpu->pc += imm;
+            }
+            break;
+        default:
+            status = 1;
+            break;
+    }
+
+    return status;
+}
+
+int RiscOpJumpJ(risc_cpu_t *cpu, uint32_t instruction)
+{
+    uint32_t imm = InstructionGetImmJ(instruction);
+    uint32_t rd = InstructionGetRd(instruction);
+
+    uint32_t *reg = &cpu->registers[0];
+
+    reg[rd] = cpu->pc + 4;
+    cpu->pc += imm;
+
     return 0;
 }
 
-int RiscOpJump(risc_cpu_t *cpu, uint32_t instruction)
+int RiscOpJumpI(risc_cpu_t *cpu, uint32_t instruction)
 {
+    uint32_t imm = InstructionGetImmI(instruction);
+    uint32_t rd = InstructionGetRd(instruction);
+    uint32_t rs1 = InstructionGetRs1(instruction);
+
+    uint32_t *reg = &cpu->registers[0];
+
+    reg[rd] = cpu->pc + 4;
+    cpu->pc = reg[rs1] + imm;
+
     return 0;
 }
 
 int RiscOpUpperImm(risc_cpu_t *cpu, uint32_t instruction)
 {
+    uint32_t rd = InstructionGetRd(instruction);
+    uint32_t imm = InstructionGetImmU(instruction);
+
+    uint32_t *reg = &cpu->registers[0];
+
+    
+
+    reg[rd] = cpu->pc + (imm << 12); // TODO: Check if that is correct
+
     return 0;
 }
 
 int RiscOpSystem(risc_cpu_t *cpu, uint32_t instruction)
 {
+    uint32_t rd = InstructionGetRd(instruction);
+    uint32_t imm = InstructionGetImmU(instruction);
+
+    uint32_t *reg = &cpu->registers[0];
+
+    reg[rd] = imm << 12; 
+
     return 0;
 }
 
@@ -188,4 +487,23 @@ uint32_t InstructionGetImmJ(uint32_t instruction)
     imm |= ((int32_t)((instruction >> 21) & 0x3FF) << 1);
 
     return (uint32_t) imm;
+}
+
+/* -------------------------------------------------------------------------- */
+
+uint32_t RiscInstructionCreateR(
+    uint32_t opcode, 
+    uint32_t rd, 
+    uint32_t funct3, 
+    uint32_t rs1, 
+    uint32_t rs2, 
+    uint32_t funct7
+)
+{
+    return  (opcode & 0x7F) |
+            ((rd & 0x1F) << 7) |
+            ((funct3 & 0x07) << 12) |
+            ((rs1 & 0x1F) << 15) |
+            ((rs2 & 0x1F) << 20) |
+            ((funct7 & 0x7F) << 25);
 }

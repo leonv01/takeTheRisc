@@ -95,13 +95,23 @@ int RiscOpStore(risc_cpu_t *cpu, uint32_t instruction);
  */
 int RiscOpBranch(risc_cpu_t *cpu, uint32_t instruction);
 /**
- * @brief Jump operations
+ * @brief Jump and link operation
  * 
  * @param cpu 
  * @param instruction 
  * @return int status code
  */
-int RiscOpJump(risc_cpu_t *cpu, uint32_t instruction);
+int RiscOpJumpJ(risc_cpu_t *cpu, uint32_t instruction);
+
+/**
+ * @brief Jump and link register operation
+ * 
+ * @param cpu 
+ * @param instruction 
+ * @return int status code
+ */
+int RiscOpJumpI(risc_cpu_t *cpu, uint32_t instruction);
+
 /**
  * @brief Upper immediate operations
  * 
@@ -118,6 +128,15 @@ int RiscOpUpperImm(risc_cpu_t *cpu, uint32_t instruction);
  * @return int status code
  */
 int RiscOpSystem(risc_cpu_t *cpu, uint32_t instruction);
+
+uint32_t RiscInstructionCreateR(
+    uint32_t opcode, 
+    uint32_t rd, 
+    uint32_t funct3, 
+    uint32_t rs1, 
+    uint32_t rs2, 
+    uint32_t funct7
+);
 
 
 #endif // RISC_CPU_H__
