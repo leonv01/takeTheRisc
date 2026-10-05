@@ -1,3 +1,9 @@
 [submodule "extern/unity"]
 	path = extern/unity
 	url = https://github.com/ThrowTheSwitch/Unity.git
+[submodule "extern/raylib"]
+	path = extern/raylib
+	url = https://github.com/raysan5/raylib.git
+[submodule "extern/raygui"]
+	path = extern/raygui
+	url = https://github.com/raysan5/raygui.git
