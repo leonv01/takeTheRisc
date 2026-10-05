@@ -34,6 +34,18 @@ int RiscMemoryDestroy(risc_memory_t *memory)
 
 int RiscMemoryRead(const risc_memory_t *memory, uint32_t address, DATA_SIZE dataSize, uint32_t *data)
 {
+    uint32_t offset = address;
+
+    if (address >= memory->base)
+    {
+        offset = address - memory->base;
+    }
+
+    if (offset >= memory->size)
+    {
+        return -1;
+    }
+
     switch (dataSize)
     {
         case BYTE: *data = RiscMemoryReadByte(memory, address); break;
@@ -47,6 +59,18 @@ int RiscMemoryRead(const risc_memory_t *memory, uint32_t address, DATA_SIZE data
 
 int RiscMemoryWrite(risc_memory_t *memory, uint32_t address, DATA_SIZE dataSize, uint32_t data)
 {
+    uint32_t offset = address;
+
+    if (address >= memory->base)
+    {
+        offset = address - memory->base;
+    }
+
+    if (offset >= memory->size)
+    {
+        return -1;
+    }
+
     switch (dataSize) 
     {
         case BYTE: RiscMemoryWriteByte(memory, address, data); break;
