@@ -16,6 +16,10 @@ endif()
 # Add Unity testing framework
 add_subdirectory(extern/unity EXCLUDE_FROM_ALL)
 
+# Add Raylib and Raygui
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) # Don't build raylib examples
+add_subdirectory(extern/raylib EXCLUDE_FROM_ALL)
+
 # Core emulator library 
 file(GLOB_RECURSE CORE_SOURCES CONFIGURE_DEPENDS "src/risc/*.c")
 add_library(risc_core STATIC ${CORE_SOURCES})
@@ -26,9 +30,15 @@ file(GLOB_RECURSE TOOL_SOURCES CONFIGURE_DEPENDS "src/tools/*.c")
 add_library(risc_tools STATIC ${TOOL_SOURCES})
 target_include_directories(risc_tools PUBLIC src)
 
+# GUI library 
+file(GLOB_RECURSE GUI_SOURCES CONFIGURE_DEPENDS "src/gui/*.c")
+add_library(risc_gui STATIC ${GUI_SOURCES})
+target_include_directories(risc_gui PUBLIC src extern/raygui/src)
+target_link_libraries(risc_gui PUBLIC raylib)
+
 # Main executable
 add_executable(TakeTheRisc src/main.c)
-target_link_libraries(TakeTheRisc PRIVATE risc_core risc_tools)
+target_link_libraries(TakeTheRisc PRIVATE risc_core risc_tools risc_gui)
 
 # Enable CTest
 enable_testing()
