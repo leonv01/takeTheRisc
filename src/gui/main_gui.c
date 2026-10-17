@@ -19,4 +19,6 @@ int GuiInitialize(void)
     }
 
     CloseWindow();
+
+    return 0;
 }

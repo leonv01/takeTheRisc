@@ -152,18 +152,15 @@ int RiscOpArithmeticR(risc_cpu_t *cpu, uint32_t instruction)
 int RiscOpArithmeticI(risc_cpu_t *cpu, uint32_t instruction)
 {
     uint32_t funct3 = InstructionGetFunct3(instruction);
-    uint32_t funct7 = InstructionGetFunct7(instruction);
     uint32_t rd = InstructionGetRd(instruction);
     uint32_t rs1 = InstructionGetRs1(instruction);
     uint32_t imm = InstructionGetImmI(instruction);
-
-    uint32_t funct10 = funct7 << 3 | funct3;
 
     uint32_t *reg = &cpu->registers[0];
 
     int status = 0;
 
-    switch (funct10)
+    switch (funct3)
     {
         case 0b000:
             // Add
@@ -183,7 +180,7 @@ int RiscOpArithmeticI(risc_cpu_t *cpu, uint32_t instruction)
             break;
         case 0b010:
             // Less than (signed)
-            if ((int32_t) reg[rs1] < imm) 
+            if ((int32_t) reg[rs1] < (int32_t) imm) 
             {
                 reg[rd] = 1;
             }
@@ -205,15 +202,19 @@ int RiscOpArithmeticI(risc_cpu_t *cpu, uint32_t instruction)
             break;
         case 0b001:
             // Shift left
-            reg[rd] = reg[rs1] << imm;
+            reg[rd] = reg[rs1] << (imm & 0x1F);
             break;
         case 0b101:
-            // Shift right logical (zero-extend)
-            reg[rd] = reg[rs1] >> imm;
-            break;
-        case 0b100000101:
-            // Shift right arithmetic (sign-extend)
-            reg[rd] = reg[rs1] >> imm;
+            if ((instruction >> 30) & 1) 
+            {
+                // Shift right arithmetic (sign-extend)
+                reg[rd] = (uint32_t)((int32_t)reg[rs1] >> (imm & 0x1F));
+            }
+            else 
+            {
+                // Shift right logical (zero-extend)
+                reg[rd] = reg[rs1] >> (imm & 0x1F);
+            }
             break;
         default:
             status = 1;
@@ -506,4 +507,19 @@ uint32_t RiscInstructionCreateR(
             ((rs1 & 0x1F) << 15) |
             ((rs2 & 0x1F) << 20) |
             ((funct7 & 0x7F) << 25);
+}
+
+uint32_t RiscInstructionCreateI(
+    uint32_t opcode,
+    uint32_t rd,
+    uint32_t funct3,
+    uint32_t rs1,
+    uint32_t imm
+)
+{
+    return  (opcode & 0x7F) |
+            ((rd & 0x1F) << 7) |
+            ((funct3 & 0x07) << 12) |
+            ((rs1 & 0x1F) << 15) |
+            ((imm & 0xFFF) << 20);
 }
