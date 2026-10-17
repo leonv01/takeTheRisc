@@ -19,27 +19,29 @@ void tearDown(void)
     RiscCpuDestroy(&cpu);
 }
 
+/* -------------------------------------------------------------------------- */
+
 static int execute_instruction(uint32_t instruction)
 {
     RiscMemoryWrite(cpu.memory, cpu.pc, DWORD, instruction);
     return RiscCpuExecute(&cpu);
 }
 
-static void assert_type_r(uint32_t opcode, uint32_t funct3, uint32_t funct7, uint32_t val1, uint32_t val2, uint32_t expected)
+static void assert_type_r(uint32_t funct3, uint32_t funct7, uint32_t val1, uint32_t val2, uint32_t expected)
 {
     cpu.registers[1] = val1;
     cpu.registers[2] = val2;
-    uint32_t inst = RiscInstructionCreateR(opcode, 3, funct3, 1, 2, funct7);
+    uint32_t inst = RiscInstructionCreateR(0b110011, 3, funct3, 1, 2, funct7);
     
     TEST_ASSERT_EQUAL_INT(0, execute_instruction(inst));
     TEST_ASSERT_EQUAL_HEX32(expected, cpu.registers[3]);
 }
 
-static void assert_type_i(uint32_t opcode, uint32_t funct3, uint32_t val1, int32_t imm, uint32_t expected)
+static void assert_type_i(uint32_t funct3, uint32_t val1, int32_t imm, uint32_t expected)
 {
     cpu.registers[1] = val1;
 
-    uint32_t inst = RiscInstructionCreateI(opcode, 2, funct3, 1, imm);
+    uint32_t inst = RiscInstructionCreateI(0b010011, 2, funct3, 1, imm);
     TEST_ASSERT_EQUAL_INT(0, execute_instruction(inst));
     TEST_ASSERT_EQUAL_HEX32(expected, cpu.registers[2]);
 }
@@ -115,57 +117,69 @@ static void assert_jump_i(uint32_t base_addr, uint32_t offset)
     TEST_ASSERT_EQUAL_HEX32(start_pc + 4, cpu.registers[1]);
 }
 
+static void assert_u_imm(uint32_t opcode, uint32_t rd, uint32_t imm, uint32_t expected)
+{
+    uint32_t start_pc = 0x1000;
+    cpu.pc = start_pc;
+    cpu.registers[rd] = 0;
+
+    uint32_t inst = RiscInstructionCreateU(opcode, rd, imm);
+
+    TEST_ASSERT_EQUAL_INT(0, execute_instruction(inst));
+    TEST_ASSERT_EQUAL_HEX32(expected, cpu.registers[rd]);
+}
+
 /* -------------------------------------------------------------------------- */
 
 void test_r_arithmetic(void)
 {
     // Add
-    assert_type_r(0b110011, 0b000, 0b0000000, 10, 20, 30);
+    assert_type_r(0b000, 0b0000000, 10, 20, 30);
     // Sub
-    assert_type_r(0b110011, 0b000, 0b0100000, 50, 20, 30);
+    assert_type_r(0b000, 0b0100000, 50, 20, 30);
     // And
-    assert_type_r(0b110011, 0b111, 0b0000000, 0b01100110, 0b11000000, 0b01000000);
+    assert_type_r(0b111, 0b0000000, 0b01100110, 0b11000000, 0b01000000);
     // Or
-    assert_type_r(0b110011, 0b110, 0b0000000, 0b01100110, 0b11000000, 0b11100110);
+    assert_type_r(0b110, 0b0000000, 0b01100110, 0b11000000, 0b11100110);
     // Xor
-    assert_type_r(0b110011, 0b100, 0b0000000, 0b01100110, 0b11000000, 0b10100110);
+    assert_type_r(0b100, 0b0000000, 0b01100110, 0b11000000, 0b10100110);
     // Shift left
-    assert_type_r(0b110011, 0b001, 0b0000000, 0b00000001, 4, 0b00010000);
+    assert_type_r(0b001, 0b0000000, 0b00000001, 4, 0b00010000);
     // Shift right (logical)
-    assert_type_r(0b110011, 0b101, 0b0000000, 0b00010000, 4, 0b00000001);
+    assert_type_r(0b101, 0b0000000, 0b00010000, 4, 0b00000001);
     // Shift right
-    assert_type_r(0b110011, 0b101, 0b0100000, 0b00010000, 4, 0b00000001);
+    assert_type_r(0b101, 0b0100000, 0b00010000, 4, 0b00000001);
     // Less than (signed)
-    assert_type_r(0b110011, 0b010, 0b0000000, 2, 3, 1); //TODO: Adjust for signed
-    assert_type_r(0b110011, 0b010, 0b0000000, 3, 2, 0);
+    assert_type_r(0b010, 0b0000000, 2, 3, 1); //TODO: Adjust for signed
+    assert_type_r(0b010, 0b0000000, 3, 2, 0);
     // Less than (unsigned)
-    assert_type_r(0b110011, 0b011, 0b0000000, 2, 3, 1); //TODO: Adjust for unsigned
-    assert_type_r(0b110011, 0b011, 0b0000000, 3, 2, 0);
+    assert_type_r(0b011, 0b0000000, 2, 3, 1); //TODO: Adjust for unsigned
+    assert_type_r(0b011, 0b0000000, 3, 2, 0);
 }
 
 void test_i_arithmetic(void)
 {
     // Add
-    assert_type_i(0b010011, 0b000, 10, 20, 30);
+    assert_type_i(0b000, 10, 20, 30);
     // And
-    assert_type_i(0b010011, 0b111, 0b01100110, 0b11000000, 0b01000000);
+    assert_type_i(0b111, 0b01100110, 0b11000000, 0b01000000);
     // Or
-    assert_type_i(0b010011, 0b110, 0b01100110, 0b11000000, 0b11100110);
+    assert_type_i(0b110, 0b01100110, 0b11000000, 0b11100110);
     // Xor
-    assert_type_i(0b010011, 0b100, 0b01100110, 0b11000000, 0b10100110);
+    assert_type_i(0b100, 0b01100110, 0b11000000, 0b10100110);
     // Less than (signed)
-    assert_type_i(0b010011, 0b010, 2, 3, 1); 
-    assert_type_i(0b010011, 0b010, 3, 2, 0); 
+    assert_type_i(0b010, 2, 3, 1); 
+    assert_type_i(0b010, 3, 2, 0); 
     // Less than (unsigned)
-    assert_type_i(0b010011, 0b011, 2, 3, 1); 
-    assert_type_i(0b010011, 0b011, 3,2, 0); 
+    assert_type_i(0b011, 2, 3, 1); 
+    assert_type_i(0b011, 3,2, 0); 
 
-    // Shift left
-    assert_type_r(0b110011, 0b001, 0b0000000, 0b00000001, 4, 0b00010000);
-    // Shift right (logical)
-    assert_type_r(0b110011, 0b101, 0b0000000, 0b00010000, 4, 0b00000001);
-    // Shift right
-    assert_type_r(0b110011, 0b101, 0b0100000, 0b00010000, 4, 0b00000001);
+    // Shift left logical (SLLI)
+    assert_type_i(0b001, 0b00000001, 4, 0b00010000);
+    // Shift right logical (SRLI)
+    assert_type_i(0b101, 0b00010000, 4, 0b00000001);
+    // Shift right arithmetic (SRAI)
+    assert_type_i(0b101, 0x80000010, (0b0100000 << 5) | 4, 0xF8000001);
 }
 
 void test_i_load(void)
@@ -250,6 +264,15 @@ void test_i_jump(void)
     assert_jump_i(0x3000, -0x00);
 }
 
+void test_u_imm(void)
+{
+    assert_u_imm(0b0110111, 1, 0x12345000, 0x12345000);
+    assert_u_imm(0b0110111, 1, 0xFFFFF000, 0xFFFFF000);
+
+    assert_u_imm(0b0010111, 1, 0x00020000, 0x00021000);
+    assert_u_imm(0b0010111, 1, 0x12345000, 0x12346000);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -261,6 +284,7 @@ int main(void)
     RUN_TEST(test_b_branch);
     RUN_TEST(test_j_jump);
     RUN_TEST(test_i_jump);
+    RUN_TEST(test_u_imm);
 
     return UNITY_END();
 }

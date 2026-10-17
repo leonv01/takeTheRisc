@@ -44,6 +44,7 @@ int RiscCpuInitialize(risc_cpu_t *cpu, risc_memory_t *memory)
     cpu->instructionTypeHandler[0b11011] = &RiscOpJumpJ;
     cpu->instructionTypeHandler[0b11001] = &RiscOpJumpI;
     cpu->instructionTypeHandler[0b01101] = &RiscOpUpperImm;
+    cpu->instructionTypeHandler[0b00101] = &RiscOpUpperImm;
     cpu->instructionTypeHandler[0b11100] = &RiscOpSystem;
 
     return 0;
@@ -391,15 +392,18 @@ int RiscOpJumpI(risc_cpu_t *cpu, uint32_t instruction)
 
 int RiscOpUpperImm(risc_cpu_t *cpu, uint32_t instruction)
 {
+    uint8_t opcode = InstructionGetOpcode(instruction);
     uint32_t rd = InstructionGetRd(instruction);
     uint32_t imm = InstructionGetImmU(instruction);
 
-    uint32_t *reg = &cpu->registers[0];
-
-    
-
-    reg[rd] = cpu->pc + (imm << 12); // TODO: Check if that is correct
-
+    if (opcode == 0b0110111) // LUI
+    {
+        cpu->registers[rd] = imm;
+    }
+    else if (opcode == 0b0010111) // AUIPC
+    {
+        cpu->registers[rd] = cpu->pc + imm;
+    }
     return 0;
 }
 
@@ -479,7 +483,7 @@ uint32_t InstructionGetImmB(uint32_t instruction)
 
 uint32_t InstructionGetImmU(uint32_t instruction)
 {
-    return (int32_t)(instruction & 0xFFFFF999);
+    return instruction & 0xFFFFF000;
 }
 
 uint32_t InstructionGetImmJ(uint32_t instruction)
@@ -574,4 +578,11 @@ uint32_t RiscInstructionCreateJ(
             (((imm >> 11) & 0x01) << 20) | 
             (((imm >> 1)  & 0x3FF) << 21) | 
             (((imm >> 20) & 0x01) << 31);  
+}
+
+uint32_t RiscInstructionCreateU(uint32_t opcode, uint32_t rd, uint32_t imm)
+{
+    return  (opcode & 0x7F) |
+            ((rd & 0x1F) << 7) |
+            (imm & 0xFFFFF000);
 }
