@@ -59,14 +59,18 @@ int RiscCpuExecute(risc_cpu_t *cpu)
 {
     cpu->registers[0] = 0;
     uint32_t data = 0;
-
-    int status = RiscMemoryRead(cpu->memory, cpu->pc, DWORD, &data);
+    
+    uint32_t current_pc = cpu->pc;
+    int status = RiscMemoryRead(cpu->memory, current_pc, DWORD, &data);
 
     uint8_t opcode = InstructionGetOpcode(data);
 
     cpu->instructionTypeHandler[opcode >> 2](cpu, data);
 
-    cpu->pc += 4;
+    if (cpu->pc == current_pc)
+    {
+        cpu->pc += 4;
+    }
 
     return status;
 }
@@ -327,25 +331,25 @@ int RiscOpBranch(risc_cpu_t *cpu, uint32_t instruction)
             }
             break;
         case 0b100:
-            if ((int32_t) reg[rs1] < (int32_t) reg[rs2])
+            if (((int32_t) reg[rs1]) < ((int32_t) reg[rs2]))
             {
                 cpu->pc += imm;
             }
             break;
         case 0b110:
-            if (reg[rs1] < reg[rs2])
+            if (((uint32_t)reg[rs1]) < ((uint32_t)reg[rs2]))
             {
                 cpu->pc += imm;
             }
             break;
         case 0b101:
-            if ((int32_t) reg[rs1] >= (int32_t) reg[rs2])
+            if (((int32_t) reg[rs1]) >= ((int32_t) reg[rs2]))
             {
                 cpu->pc += imm;
             }
             break;
         case 0b111:
-            if (reg[rs1] >= reg[rs2])
+            if (((uint32_t)reg[rs1]) >= ((uint32_t)reg[rs2]))
             {
                 cpu->pc += imm;
             }
@@ -466,8 +470,8 @@ uint32_t InstructionGetImmB(uint32_t instruction)
     int32_t imm = (
         (instruction & 0x80000000) >> 19 |  // imm[12]
         ((instruction >> 7) & 0x01) << 11 | // imm[11]
-        ((instruction >> 25) & 0x3F) >> 5 | // imm[10:5]
-        ((instruction >> 8) & 0x0F) >> 1    // imm[4:1]
+        ((instruction >> 25) & 0x3F) << 5 | // imm[10:5]
+        ((instruction >> 8) & 0x0F) << 1    // imm[4:1]
     );
 
     return (uint32_t) imm;
@@ -538,4 +542,22 @@ uint32_t RiscInstructionCreateS(
             ((rs1 & 0x1F) << 15) |
             ((rs2 & 0x1F) << 20) |
             (((imm >> 5) & 0x7F) << 25);
+}
+
+uint32_t RiscInstructionCreateB(
+    uint32_t opcode,
+    uint32_t funct3,
+    uint32_t rs1,
+    uint32_t rs2,
+    uint32_t imm
+)
+{
+    return  (opcode & 0x7F) |
+            (((imm >> 11) & 0x01) << 7) |
+            (((imm >> 1) & 0x0F) << 8) |
+            ((funct3 & 0x07) << 12) |
+            ((rs1 & 0x1F) << 15) |
+            ((rs2 & 0x1F) << 20) |
+            (((imm >> 5) & 0x3F) << 25) |
+            (((imm >> 12) & 0x01) << 31);
 }

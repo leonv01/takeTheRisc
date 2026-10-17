@@ -3,6 +3,8 @@
 #include "risc/risc_cpu.h"
 #include "unity_internals.h"
 
+#include <stdbool.h>
+
 static risc_cpu_t cpu;
 static risc_memory_t memory;
 
@@ -67,6 +69,22 @@ static void assert_store_s(uint32_t funct3, uint32_t base_addr, uint32_t offset,
     uint32_t stored_memory = 0;
     RiscMemoryRead(cpu.memory, target_addr, size, &stored_memory);
     TEST_ASSERT_EQUAL_HEX32(expected, stored_memory);
+}
+
+static void assert_branch_b(uint32_t funct3, uint32_t val1, uint32_t val2, int32_t offset, bool expect_taken)
+{
+    uint32_t start_pc = 0x1000;
+    cpu.pc = start_pc;
+
+    cpu.registers[1] = val1;
+    cpu.registers[2] = val2;
+
+    uint32_t inst = RiscInstructionCreateB(0b1100011, funct3, 1, 2, offset);
+    
+    TEST_ASSERT_EQUAL_INT(0, execute_instruction(inst));
+
+    uint32_t expected_pc = expect_taken ? (start_pc + offset) : (start_pc + 4);
+    TEST_ASSERT_EQUAL_HEX32(expected_pc, cpu.pc);
 }
 
 void test_r_arithmetic(void)
@@ -152,6 +170,41 @@ void test_i_store(void)
     assert_store_s(0b010, 0x100, 4, 0xDEADBEEF, DWORD, 0xDEADBEEF);
 }
 
+void test_b_branch(void)
+{
+    // Branch if equal
+    assert_branch_b(0b000, 42, 42, 0x124, true);
+    assert_branch_b(0b000, 42, 41, 0x124, false);
+
+    // Branch if not equal
+    assert_branch_b(0b001, 42, 41, 0x124, true);
+    assert_branch_b(0b001, 42, 42, 0x124, false);
+
+    // Branch if less than (signed)
+    assert_branch_b(0b100, -5, 42, 0x124, true);
+    assert_branch_b(0b100, 42, 42, 0x124, false);
+    assert_branch_b(0b100, -42, -42, 0x124, false);
+    assert_branch_b(0b100, 43, -5, 0x124, false);
+
+    // Branch if less than (unsigned)
+    assert_branch_b(0b110, 5,-42, 0x124, true);
+    assert_branch_b(0b110, 42, 42, 0x124, false);
+    assert_branch_b(0b110, -42, -42, 0x124, false);
+    assert_branch_b(0b110, -43, 42, 0x124, false);
+
+    // Branch if greater or equal (signed)
+    assert_branch_b(0b101, 5, -42, 0x124, true);
+    assert_branch_b(0b101, 42, 42, 0x124, true);
+    assert_branch_b(0b101, -42, -42, 0x124, true);
+    assert_branch_b(0b101, -43, 5, 0x124, false);
+
+    // Branch if greater or equal (unsigned)
+    assert_branch_b(0b111, -42,5, 0x124, true);
+    assert_branch_b(0b111, 42, 42, 0x124, true);
+    assert_branch_b(0b111, -42, -42, 0x124, true);
+    assert_branch_b(0b111, 41, 42, 0x124, false);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -160,6 +213,7 @@ int main(void)
     RUN_TEST(test_i_arithmetic);
     RUN_TEST(test_i_load);
     RUN_TEST(test_i_store);
+    RUN_TEST(test_b_branch);
 
     return UNITY_END();
 }
