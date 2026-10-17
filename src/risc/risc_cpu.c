@@ -271,7 +271,7 @@ int RiscOpLoad(risc_cpu_t *cpu, uint32_t instruction)
 
 int RiscOpStore(risc_cpu_t *cpu, uint32_t instruction)
 {
-    uint32_t imm = InstructionGetImmI(instruction);
+    uint32_t imm = InstructionGetImmS(instruction);
     uint32_t funct3 = InstructionGetFunct3(instruction);
     uint32_t rs1 = InstructionGetRs1(instruction);
     uint32_t rs2 = InstructionGetRs2(instruction);
@@ -522,4 +522,20 @@ uint32_t RiscInstructionCreateI(
             ((funct3 & 0x07) << 12) |
             ((rs1 & 0x1F) << 15) |
             ((imm & 0xFFF) << 20);
+}
+
+uint32_t RiscInstructionCreateS(
+    uint32_t opcode, 
+    uint32_t funct3, 
+    uint32_t rs1, 
+    uint32_t rs2,
+    uint32_t imm
+)
+{
+    return  (opcode & 0x7F) |
+            ((imm & 0x1F) << 7) |
+            ((funct3 & 0x07) << 12) |
+            ((rs1 & 0x1F) << 15) |
+            ((rs2 & 0x1F) << 20) |
+            (((imm >> 5) & 0x7F) << 25);
 }

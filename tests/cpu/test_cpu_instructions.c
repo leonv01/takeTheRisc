@@ -54,6 +54,21 @@ static void assert_load_i(uint32_t funct3, uint32_t base_addr, uint32_t offset, 
     TEST_ASSERT_EQUAL_HEX32(expected, cpu.registers[2]);
 }
 
+static void assert_store_s(uint32_t funct3, uint32_t base_addr, uint32_t offset, uint32_t test_data, DATA_SIZE size, uint32_t expected)
+{
+    uint32_t target_addr = base_addr + offset;
+
+    cpu.registers[1] = base_addr;
+    cpu.registers[2] = test_data;
+
+    uint32_t inst = RiscInstructionCreateS(0b0100011, funct3, 1, 2, offset);
+    TEST_ASSERT_EQUAL_INT(0, execute_instruction(inst));
+
+    uint32_t stored_memory = 0;
+    RiscMemoryRead(cpu.memory, target_addr, size, &stored_memory);
+    TEST_ASSERT_EQUAL_HEX32(expected, stored_memory);
+}
+
 void test_r_arithmetic(void)
 {
     // Add
@@ -124,6 +139,19 @@ void test_i_load(void)
     assert_load_i(0b010, 0x100, 4, 0x9FFFFFFF, DWORD, 0x9FFFFFFF);
 }
 
+void test_i_store(void)
+{
+    // Store byte
+    assert_store_s(0b000, 0x100, 4, 0x1234567F, BYTE, 0x7F);
+    assert_store_s(0b000, 0x100, 4, 0x12345680, BYTE, 0x80);
+
+    // Store word
+    assert_store_s(0b001, 0x100, 4, 0x1234BEEF, WORD, 0xBEEF);
+
+    // Store dword
+    assert_store_s(0b010, 0x100, 4, 0xDEADBEEF, DWORD, 0xDEADBEEF);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -131,6 +159,7 @@ int main(void)
     RUN_TEST(test_r_arithmetic);
     RUN_TEST(test_i_arithmetic);
     RUN_TEST(test_i_load);
+    RUN_TEST(test_i_store);
 
     return UNITY_END();
 }
