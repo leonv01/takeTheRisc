@@ -243,7 +243,7 @@ int RiscOpLoad(risc_cpu_t *cpu, uint32_t instruction)
     {
         case 0b000:
             status = RiscMemoryRead(cpu->memory, address, BYTE, &data);
-            reg[rd] = (int32_t) data;
+            reg[rd] = (uint32_t)(int8_t)data;
             break;
         case 0b100:
             status = RiscMemoryRead(cpu->memory, address, BYTE, &data);
@@ -251,7 +251,7 @@ int RiscOpLoad(risc_cpu_t *cpu, uint32_t instruction)
             break;
         case 0b001:
             status = RiscMemoryRead(cpu->memory, address, WORD, &data);
-            reg[rd] = (int32_t) data;
+            reg[rd] = (uint32_t)(int16_t)data;
             break;
         case 0b101:
             status = RiscMemoryRead(cpu->memory, address, WORD, &data);
