@@ -87,6 +87,36 @@ static void assert_branch_b(uint32_t funct3, uint32_t val1, uint32_t val2, int32
     TEST_ASSERT_EQUAL_HEX32(expected_pc, cpu.pc);
 }
 
+static void assert_jump_j(uint32_t offset)
+{
+    uint32_t start_pc = 0x1000;
+    cpu.pc = start_pc;
+    cpu.registers[1] = 0;
+
+    uint32_t inst = RiscInstructionCreateJ(0b1101111, 1, offset);
+    TEST_ASSERT_EQUAL_INT(0, execute_instruction(inst));
+
+    TEST_ASSERT_EQUAL_HEX32(start_pc + offset, cpu.pc);
+
+    TEST_ASSERT_EQUAL_HEX32(start_pc + 4, cpu.registers[1]);
+}
+
+static void assert_jump_i(uint32_t base_addr, uint32_t offset)
+{
+    uint32_t start_pc = 0x1000;
+    cpu.pc = start_pc;
+    cpu.registers[1] = 0;
+    cpu.registers[2] = base_addr;
+
+    uint32_t inst = RiscInstructionCreateI(0b1100111, 1, 0b000, 2, offset);
+    TEST_ASSERT_EQUAL_INT(0, execute_instruction(inst));
+
+    TEST_ASSERT_EQUAL_HEX32(base_addr + offset, cpu.pc);
+    TEST_ASSERT_EQUAL_HEX32(start_pc + 4, cpu.registers[1]);
+}
+
+/* -------------------------------------------------------------------------- */
+
 void test_r_arithmetic(void)
 {
     // Add
@@ -205,6 +235,21 @@ void test_b_branch(void)
     assert_branch_b(0b111, 41, 42, 0x124, false);
 }
 
+void test_j_jump(void)
+{
+    assert_jump_j(0x124);
+    assert_jump_j(-0x124);
+    assert_jump_j(0x1824);
+    assert_jump_j(0x04);
+}
+
+void test_i_jump(void)
+{
+    assert_jump_i(0x2000, 0x40);
+    assert_jump_i(0x2000, -0x40);
+    assert_jump_i(0x3000, -0x00);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -214,6 +259,8 @@ int main(void)
     RUN_TEST(test_i_load);
     RUN_TEST(test_i_store);
     RUN_TEST(test_b_branch);
+    RUN_TEST(test_j_jump);
+    RUN_TEST(test_i_jump);
 
     return UNITY_END();
 }

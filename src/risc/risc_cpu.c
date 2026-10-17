@@ -561,3 +561,17 @@ uint32_t RiscInstructionCreateB(
             (((imm >> 5) & 0x3F) << 25) |
             (((imm >> 12) & 0x01) << 31);
 }
+
+uint32_t RiscInstructionCreateJ(
+    uint32_t opcode,
+    uint32_t rd,
+    uint32_t imm
+)
+{
+    return  (opcode & 0x7F) |
+            ((rd & 0x1F) << 7) |
+            (((imm >> 12) & 0xFF) << 12) | 
+            (((imm >> 11) & 0x01) << 20) | 
+            (((imm >> 1)  & 0x3FF) << 21) | 
+            (((imm >> 20) & 0x01) << 31);  
+}

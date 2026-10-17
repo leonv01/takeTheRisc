@@ -161,4 +161,11 @@ uint32_t RiscInstructionCreateB(
     uint32_t rs2,
     uint32_t imm
 );
+
+uint32_t RiscInstructionCreateJ(
+    uint32_t opcode,
+    uint32_t rd,
+    uint32_t imm
+);
+
 #endif // RISC_CPU_H__
