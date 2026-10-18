@@ -2,6 +2,7 @@
 #define RISC_CPU_H__
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "risc/risc_memory.h"
 
@@ -31,6 +32,8 @@ typedef struct risc_cpu_t
     InstructionTypeHandler instructionTypeHandler[RISC_INSTRUCTION_HANDLER_COUNT_32I_COUNT];
 
     risc_memory_t *memory;
+
+    bool halted;
 } risc_cpu_t;
 
 /* -------------------------------------------------------------------------- */

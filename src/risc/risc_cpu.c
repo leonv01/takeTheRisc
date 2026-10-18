@@ -48,6 +48,8 @@ int RiscCpuInitialize(risc_cpu_t *cpu, risc_memory_t *memory)
     cpu->instructionTypeHandler[0b00101] = &RiscOpUpperImm;
     cpu->instructionTypeHandler[0b11100] = &RiscOpSystem;
 
+    cpu->halted = false;
+
     return 0;
 }
 
@@ -121,11 +123,11 @@ int RiscOpArithmeticR(risc_cpu_t *cpu, uint32_t instruction)
             break;
         case 0b0000000101:
             // Shift right logical
-            reg[rd] = reg[rs1] >> reg[rs2];
+            reg[rd] = reg[rs1] >> (reg[rs2] & 0x1F);
             break;
         case 0b0100000101:
             // Shift right arithmetic
-            reg[rd] = reg[rs1] >> reg[rs2];
+            reg[rd] = (uint32_t) ((int32_t)reg[rs1] >> (reg[rs2] & 0x1F));
             break;
         case 0b0000000010:
             // Less than (signed)
@@ -387,8 +389,10 @@ int RiscOpJumpI(risc_cpu_t *cpu, uint32_t instruction)
 
     uint32_t *reg = &cpu->registers[0];
 
+    uint32_t target = (reg[rs1] + imm) & ~0x01;
+
     reg[rd] = cpu->pc + 4;
-    cpu->pc = reg[rs1] + imm;
+    cpu->pc = target;
 
     return 0;
 }
@@ -421,7 +425,7 @@ int RiscOpSystem(risc_cpu_t *cpu, uint32_t instruction)
 
     if (instruction == 0x00000073)
     {
-        RiscMemoryWrite(cpu->memory, RISC_ADDRESS_TOHOST, DWORD, cpu->registers[RISC_ABI_GP]);
+        cpu->halted = true;
     }
 
     return 0;

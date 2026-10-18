@@ -32,22 +32,20 @@ static void run_riscv_test(const char *file)
 {
     FileReaderLoadMemoryElf(file, &cpu);
 
-    uint32_t tohost = 0;
     size_t cycles = 0;
 
-    while (tohost == 0 && cycles < MAX_CYCLES)
+    while (cpu.halted == false && cycles < MAX_CYCLES)
     {
         int status = RiscCpuExecute(&cpu);
 
         TEST_ASSERT_EQUAL_INT(0, status);
 
-        RiscMemoryRead(cpu.memory, RISC_ADDRESS_TOHOST, DWORD, &tohost);
         cycles++;
     }
 
     TEST_ASSERT_LESS_THAN_INT(MAX_CYCLES, cycles);
 
-    TEST_ASSERT_EQUAL_HEX32(0x01, tohost);
+    TEST_ASSERT_EQUAL_HEX32(0x01, cpu.registers[RISC_ABI_GP]);
 }
 
 /* -------------------------------------------------------------------------- */
