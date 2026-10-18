@@ -9,4 +9,6 @@
 void FileReaderRead(const char *path, uint8_t *buffer, size_t size);
 size_t FileReaderLoadMemory(const char *path, risc_memory_t *memory, uint32_t address);
 
+void FileReaderLoadMemoryElf(const char *path, risc_memory_t *memory);
+
 #endif // FILE_READER_H__

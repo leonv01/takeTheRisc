@@ -411,10 +411,11 @@ int RiscOpSystem(risc_cpu_t *cpu, uint32_t instruction)
 {
     uint32_t rd = InstructionGetRd(instruction);
     uint32_t imm = InstructionGetImmU(instruction);
+    uint32_t funct3 = InstructionGetFunct3(instruction);
+    uint32_t rs1 = InstructionGetRs1(instruction);
 
     uint32_t *reg = &cpu->registers[0];
 
-    reg[rd] = imm << 12; 
 
     return 0;
 }

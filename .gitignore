@@ -1,2 +1,5 @@
 .vscode/
 build/
+
+riscv-tests/
+riscv_tests/

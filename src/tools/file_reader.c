@@ -1,9 +1,11 @@
 #include "tools/file_reader.h"
 
+#include <X11/Xlib.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <elf.h>
 
 void FileReaderRead(const char *path, uint8_t *buffer, size_t size)
 {
@@ -63,5 +65,28 @@ size_t FileReaderLoadMemory(const char *path, risc_memory_t *memory, uint32_t ad
         fclose(filePtr);
         
         return byteRead;
+    }
+}
+
+void FileReaderLoadMemoryElf(const char *path, risc_memory_t *memory)
+{
+    Elf32_Ehdr header;
+
+    FILE *file = fopen(path, "rb");
+
+    if (file)
+    {
+        fread(&header, sizeof(header), 1, file);
+
+        if (memcmp(header.e_ident, ELFMAG, SELFMAG) == 1)
+        {
+            printf("Valid\n");
+        }
+        else
+        {
+            fprintf(stderr, "File is not a valid ELF file (MAGIC Number not present)\n");
+        }
+
+        fclose(file);
     }
 }
