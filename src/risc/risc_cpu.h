@@ -8,9 +8,20 @@
 #define RISC_INSTRUCTION_32I_COUNT 32
 #define RISC_INSTRUCTION_HANDLER_COUNT_32I_COUNT 32
 
+#define RISC_ADDRESS_TOHOST 0x80001000
+
 struct risc_cpu_t;
 
 typedef int (*InstructionTypeHandler)(struct risc_cpu_t *, uint32_t);
+
+typedef enum RISC_ABI
+{
+    RISC_ABI_ZERO = 0,
+    RISC_ABI_RA = 1,
+    RISC_ABI_SP = 2,
+    RISC_ABI_GP = 3,
+    RISC_ABI_TP = 4
+} RISC_ABI;
 
 typedef struct risc_cpu_t
 {

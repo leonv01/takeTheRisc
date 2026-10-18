@@ -59,7 +59,7 @@ int RiscCpuDestroy(risc_cpu_t *cpu)
 
 int RiscCpuExecute(risc_cpu_t *cpu)
 {
-    cpu->registers[0] = 0;
+    cpu->registers[RISC_ABI_ZERO] = 0;
     uint32_t data = 0;
     
     uint32_t current_pc = cpu->pc;
@@ -419,6 +419,10 @@ int RiscOpSystem(risc_cpu_t *cpu, uint32_t instruction)
 
     uint32_t *reg = &cpu->registers[0];
 
+    if (instruction == 0x00000073)
+    {
+        RiscMemoryWrite(cpu->memory, RISC_ADDRESS_TOHOST, DWORD, cpu->registers[RISC_ABI_GP]);
+    }
 
     return 0;
 }
@@ -476,10 +480,10 @@ uint32_t InstructionGetImmS(uint32_t instruction)
 uint32_t InstructionGetImmB(uint32_t instruction)
 {
     int32_t imm = (
-        (instruction & 0x80000000) >> 19 |  // imm[12]
-        ((instruction >> 7) & 0x01) << 11 | // imm[11]
-        ((instruction >> 25) & 0x3F) << 5 | // imm[10:5]
-        ((instruction >> 8) & 0x0F) << 1    // imm[4:1]
+        ((int32_t)(instruction & 0x80000000)) >> 19 |  // imm[12]
+        ((int32_t)(instruction >> 7) & 0x01) << 11 | // imm[11]
+        ((int32_t)(instruction >> 25) & 0x3F) << 5 | // imm[10:5]
+        ((int32_t)(instruction >> 8) & 0x0F) << 1    // imm[4:1]
     );
 
     return (uint32_t) imm;

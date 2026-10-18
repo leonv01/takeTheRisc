@@ -57,3 +57,14 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
     set_tests_properties(${TEST_NAME} PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 endforeach()
+
+# Copy relevant RISC-V test files into the build directory
+file(GLOB RISCV_TEST_FILES CONFIGURE_DEPENDS 
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/riscv-tests/rv32ui-p-*"
+)
+
+add_custom_target(copy_test_data ALL
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/tests/riscv-tests"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RISCV_TEST_FILES} "${CMAKE_CURRENT_BINARY_DIR}/tests/riscv-tests"
+    COMMENT "Copying RISC-V test files into build directory"
+)
