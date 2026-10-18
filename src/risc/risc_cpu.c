@@ -4,9 +4,7 @@
 
 #include <string.h>
 
-#define GET_OPCODE(x)(x & 0b00111111)
-
-static int RiscOpError(risc_cpu_t *cpu, uint32_t instruction);
+static inline int RiscOpError(risc_cpu_t *cpu, uint32_t instruction);
 
 static inline uint32_t InstructionGetOpcode(uint32_t instruction);
 static inline uint32_t InstructionGetRd(uint32_t instruction);
@@ -55,6 +53,7 @@ int RiscCpuInitialize(risc_cpu_t *cpu, risc_memory_t *memory)
 
 int RiscCpuDestroy(risc_cpu_t *cpu)
 {
+    LoggerMessage(DEBUG, "[%s] Destroying CPU", __FUNCTION__);
     RiscMemoryDestroy(cpu->memory);
     return 0;
 }
@@ -62,16 +61,25 @@ int RiscCpuDestroy(risc_cpu_t *cpu)
 int RiscCpuExecute(risc_cpu_t *cpu)
 {
     cpu->registers[RISC_ABI_ZERO] = 0;
-    uint32_t data = 0;
+    uint32_t instruction = 0;
     
     uint32_t current_pc = cpu->pc;
-    int status = RiscMemoryRead(cpu->memory, current_pc, DWORD, &data);
+    int status = RiscMemoryRead(cpu->memory, current_pc, DWORD, &instruction);
 
-    uint8_t opcode = InstructionGetOpcode(data);
+    uint8_t opcode = InstructionGetOpcode(instruction);
 
-    LoggerMessage(DEBUG, "[%s] Next instruction: (0x%.8x) (Opcode: 0x%.2x)", __FUNCTION__, data, opcode);
+    LoggerInstruction(
+        DEBUG,
+        opcode,
+        InstructionGetFunct3(instruction),
+        InstructionGetFunct7(instruction),
+        InstructionGetRd(instruction),
+        InstructionGetRs1(instruction),
+        InstructionGetRs2(instruction),
+        InstructionGetImmB(instruction)
+    );
 
-    cpu->instructionTypeHandler[opcode >> 2](cpu, data);
+    cpu->instructionTypeHandler[opcode >> 2](cpu, instruction);
 
     if (cpu->pc == current_pc)
     {
@@ -416,13 +424,6 @@ int RiscOpUpperImm(risc_cpu_t *cpu, uint32_t instruction)
 
 int RiscOpSystem(risc_cpu_t *cpu, uint32_t instruction)
 {
-    uint32_t rd = InstructionGetRd(instruction);
-    uint32_t imm = InstructionGetImmU(instruction);
-    uint32_t funct3 = InstructionGetFunct3(instruction);
-    uint32_t rs1 = InstructionGetRs1(instruction);
-
-    uint32_t *reg = &cpu->registers[0];
-
     if (instruction == 0x00000073)
     {
         cpu->halted = true;

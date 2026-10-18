@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 typedef enum LOGGING_LEVEL
 {
@@ -27,6 +28,17 @@ void LoggerMessage(
 
 void LoggerSetOuput(
     FILE *stream
+);
+
+void LoggerInstruction(
+    LOGGING_LEVEL loggingLevel,
+    uint32_t opcode,
+    uint32_t funct3,
+    uint32_t funct7,
+    uint32_t rd,
+    uint32_t rs1,
+    uint32_t rs2,
+    uint32_t imm
 );
 
 #endif // LOGGER_H__
