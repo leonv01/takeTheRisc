@@ -1,4 +1,6 @@
 #include "tools/file_reader.h"
+#include "risc/risc_cpu.h"
+#include "tools/logger.h"
 
 #include <X11/Xlib.h>
 #include <stdio.h>
@@ -68,9 +70,11 @@ size_t FileReaderLoadMemory(const char *path, risc_memory_t *memory, uint32_t ad
     }
 }
 
-void FileReaderLoadMemoryElf(const char *path, risc_memory_t *memory)
+void FileReaderLoadMemoryElf(const char *path, risc_cpu_t *cpu)
 {
     Elf32_Ehdr header;
+    
+    LoggerMessage(INFO, "[%s] Opening file: %s", __FUNCTION__, path);
 
     FILE *file = fopen(path, "rb");
 
@@ -78,13 +82,37 @@ void FileReaderLoadMemoryElf(const char *path, risc_memory_t *memory)
     {
         fread(&header, sizeof(header), 1, file);
 
-        if (memcmp(header.e_ident, ELFMAG, SELFMAG) == 1)
+        if (memcmp(header.e_ident, ELFMAG, SELFMAG) == 0)
         {
-            printf("Valid\n");
+            LoggerMessage(SUCCESS, "[%s] ELF file contains MAGIC (0x%.2X)", __FUNCTION__, ELFMAG0);
+
+            LoggerMessage(INFO, "[%s] Setting program counter to e_entry (0x%.8X)", __FUNCTION__, header.e_entry);
+            cpu->pc = header.e_entry;
+
+            LoggerMessage(DEBUG, "[%s] Iterating through program header", __FUNCTION__);
+            for (size_t i = 0; i < header.e_phnum; i++) 
+            {
+                LoggerMessage(DEBUG, "[%s] Program header entry: %ld", __FUNCTION__, i);
+                fseek(file, header.e_phoff + i * sizeof(Elf32_Phdr), SEEK_SET);
+                
+                Elf32_Phdr programHeader;
+                fread(&programHeader, sizeof(Elf32_Phdr), 1, file);
+                
+                LoggerMessage(DEBUG, "[%s] Program header p_type 0x%.2x", __FUNCTION__, programHeader.p_type);
+
+                // Find loadable segments in the program header
+                if (programHeader.p_type == PT_LOAD)
+                {
+                    fseek(file, programHeader.p_offset, SEEK_SET);
+                    uint32_t memoryOffset = programHeader.p_paddr - cpu->memory->base;
+                    fread(&cpu->memory->data[memoryOffset], 1, programHeader.p_filesz, file);
+                    LoggerMessage(DEBUG, "[%s] Found loadable segment in program header. Loading into memory (0x%.8x)", __FUNCTION__, memoryOffset);
+                }
+            }
         }
         else
         {
-            fprintf(stderr, "File is not a valid ELF file (MAGIC Number not present)\n");
+            LoggerMessage(ERROR, "[%s] ELF file does not contain MAGIC (0x%.2X)", __FUNCTION__, ELFMAG0);
         }
 
         fclose(file);

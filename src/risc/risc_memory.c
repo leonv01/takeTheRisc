@@ -48,9 +48,9 @@ int RiscMemoryRead(const risc_memory_t *memory, uint32_t address, DATA_SIZE data
 
     switch (dataSize)
     {
-        case BYTE: *data = RiscMemoryReadByte(memory, address); break;
-        case WORD: *data = RiscMemoryReadWord(memory, address); break;
-        case DWORD: *data = RiscMemoryReadDWord(memory, address); break;
+        case BYTE: *data = RiscMemoryReadByte(memory, offset); break;
+        case WORD: *data = RiscMemoryReadWord(memory, offset); break;
+        case DWORD: *data = RiscMemoryReadDWord(memory, offset); break;
         default:
             break;
     }
@@ -73,9 +73,9 @@ int RiscMemoryWrite(risc_memory_t *memory, uint32_t address, DATA_SIZE dataSize,
 
     switch (dataSize) 
     {
-        case BYTE: RiscMemoryWriteByte(memory, address, data); break;
-        case WORD: RiscMemoryWriteWord(memory, address, data); break;
-        case DWORD: RiscMemoryWriteDWord(memory, address, data); break;
+        case BYTE: RiscMemoryWriteByte(memory, offset, data); break;
+        case WORD: RiscMemoryWriteWord(memory, offset, data); break;
+        case DWORD: RiscMemoryWriteDWord(memory, offset, data); break;
         default:
             break;
     }

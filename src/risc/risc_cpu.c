@@ -1,5 +1,6 @@
 #include "risc/risc_cpu.h"
 #include "risc/risc_memory.h"
+#include "tools/logger.h"
 
 #include <string.h>
 
@@ -65,6 +66,8 @@ int RiscCpuExecute(risc_cpu_t *cpu)
     int status = RiscMemoryRead(cpu->memory, current_pc, DWORD, &data);
 
     uint8_t opcode = InstructionGetOpcode(data);
+
+    LoggerMessage(DEBUG, "[%s] Next instruction: (0x%.8x) (Opcode: 0x%.2x)", __FUNCTION__, data, opcode);
 
     cpu->instructionTypeHandler[opcode >> 2](cpu, data);
 

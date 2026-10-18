@@ -30,6 +30,8 @@ file(GLOB_RECURSE TOOL_SOURCES CONFIGURE_DEPENDS "src/tools/*.c")
 add_library(risc_tools STATIC ${TOOL_SOURCES})
 target_include_directories(risc_tools PUBLIC src)
 
+target_link_libraries(risc_core PUBLIC risc_tools)
+
 # GUI library 
 file(GLOB_RECURSE GUI_SOURCES CONFIGURE_DEPENDS "src/gui/*.c")
 add_library(risc_gui STATIC ${GUI_SOURCES})
@@ -50,7 +52,8 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
     get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
 
     add_executable(${TEST_NAME} ${TEST_SOURCE})
-    target_link_libraries(${TEST_NAME} PRIVATE risc_core unity)
+    target_link_libraries(${TEST_NAME} PRIVATE risc_core risc_tools unity)
 
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+    set_tests_properties(${TEST_NAME} PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 endforeach()
