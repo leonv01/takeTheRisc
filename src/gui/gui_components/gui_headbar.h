@@ -14,6 +14,7 @@ typedef struct GuiHeadbarCallbacks {
     void (*onStep)(void);
     void (*onRun)(void);
     void (*onReset)(void);
+    void (*onStop)(void);
 } GuiHeadbarCallbacks;
 
 typedef struct GuiMenuButton {
@@ -24,6 +25,7 @@ typedef struct GuiMenuButton {
     void (*buttonCallback)(void);
 } GuiMenuButton;
 
+// Gui header bar context data
 typedef struct GuiHeadbarState {
     Rectangle bounds;
     int width, height;
@@ -35,9 +37,14 @@ typedef struct GuiHeadbarState {
     GuiMenuButton buttons[HEADBAR_BUTTON_COUNT];
 } GuiHeadbarState;
 
+GuiHeadbarState InitGuiHeadbar(GuiHeadbarCallbacks callbacks);
+void GuiHeadbar(GuiHeadbarState *state);
 
 #endif // GUI_HEADBAR_H__
 
+/* -------------------------------------------------------------------------- */
+/*                         GUI_HEADBAR IMPLEMENTATION                         */
+/* -------------------------------------------------------------------------- */
 #ifdef GUI_HEADBAR_IMPLEMENTATION
 
 #include <raygui.h>
@@ -49,11 +56,12 @@ GuiHeadbarState InitGuiHeadbar(GuiHeadbarCallbacks callbacks)
         .bounds = { 0, 0, (float)GetScreenWidth(), 40 },
         .buttonWidth = 90,
         .buttonHeight = 28,
-        .buttonCount = 4,
+        .buttonCount = 5,
         .buttons = {
             { .label = "Load ELF", .iconId = 198, .buttonCallback = callbacks.onLoadElf },
             { .label = "Step", .iconId = 134, .buttonCallback = callbacks.onStep },
             { .label = "Run", .iconId = 131, .buttonCallback = callbacks.onRun },
+            { .label = "Stop", .iconId = 133, .buttonCallback = callbacks.onStop },
             { .label = "Reset", .iconId = 210, .buttonCallback = callbacks.onReset },
         },
         .padding = 12,
