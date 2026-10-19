@@ -18,6 +18,9 @@
 #define GUI_WINDOW_FILE_DIALOG_IMPLEMENTATION
 #include "gui_components/gui_file_dialog.h"
 
+#define GUI_TOAST_H_IMPLEMENTATION
+#include "gui_components/gui_toast.h"
+
 #include <raylib.h>
 #include <pthread.h>
 
@@ -52,6 +55,7 @@ static Mode currentMode = LIGHT_MODE;
 GuiCpuState cpuState;
 GuiHeadbarState headbarState;
 GuiWindowFileDialogState fileDialogState;
+GuiToastState toastState;
 
 static GuiHeadbarCallbacks guiHeadbarCallbacks = {
     .onLoadElf = CallbackLoadElf,
@@ -97,6 +101,7 @@ int GuiRun(void)
             GuiCpu(&cpuState);
             GuiHeadbar(&headbarState);
             GuiWindowFileDialog(&fileDialogState);
+            GuiToast(&toastState);
         }
         EndDrawing();
     }
@@ -123,6 +128,7 @@ static int InitializeComponents(void)
     cpuState = InitGuiCpu();
     headbarState = InitGuiHeadbar(guiHeadbarCallbacks);
     fileDialogState = InitGuiWindowFileDialog(GetWorkingDirectory(), guiWindowFileDialogCallbacks);
+    toastState = InitGuiToastState();
 
     pthread_create(&cpuThread, NULL, CpuThread, NULL);
 
@@ -146,6 +152,7 @@ void CallbackLoadElf(void)
     LoggerMessage(DEBUG, "Load ELF");
 
     fileDialogState.windowActive = true;
+
 }
 
 void CallbackStep(void)
@@ -183,6 +190,8 @@ void CallbackOpenFile(void)
 
     LoggerMessage(INFO, "Loading file: %s", buffer);
     FileReaderLoadMemoryElf(buffer, &cpu);
+
+    GuiToastShow(&toastState, "File loaded", TOAST_SUCCESS, 2.0f);
 }
 
 void CallbackClose(void)
