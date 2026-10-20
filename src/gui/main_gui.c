@@ -21,6 +21,9 @@
 #define GUI_TOAST_H_IMPLEMENTATION
 #include "gui_components/gui_toast.h"
 
+#define GUI_LOADED_PROGRAM_IMPLEMENTATION
+#include "gui_components/gui_loaded_program.h"
+
 #include <raylib.h>
 #include <pthread.h>
 
@@ -56,13 +59,14 @@ GuiCpuState cpuState;
 GuiHeadbarState headbarState;
 GuiWindowFileDialogState fileDialogState;
 GuiToastState toastState;
+GuiLoadedProgramState loadedProgramState;
 
 static GuiHeadbarCallbacks guiHeadbarCallbacks = {
-    .onLoadElf = CallbackLoadElf,
-    .onStep = CallbackStep,
-    .onRun = CallbackRun,
-    .onReset = CallbackReset,
-    .onStop = CallbackStop
+    .onLoadElf  = CallbackLoadElf,
+    .onStep     = CallbackStep,
+    .onRun      = CallbackRun,
+    .onReset    = CallbackReset,
+    .onStop     = CallbackStop
 };
 
 static GuiWindowFileDialogCallbacks guiWindowFileDialogCallbacks = {
@@ -102,6 +106,7 @@ int GuiRun(void)
             GuiHeadbar(&headbarState);
             GuiWindowFileDialog(&fileDialogState);
             GuiToast(&toastState);
+            GuiLoadedProgram(&loadedProgramState, &cpu);
         }
         EndDrawing();
     }
@@ -129,7 +134,7 @@ static int InitializeComponents(void)
     headbarState = InitGuiHeadbar(guiHeadbarCallbacks);
     fileDialogState = InitGuiWindowFileDialog(GetWorkingDirectory(), guiWindowFileDialogCallbacks);
     toastState = InitGuiToastState();
-
+    loadedProgramState = InitGuiLoadedProgram();
     pthread_create(&cpuThread, NULL, CpuThread, NULL);
 
     return 0;
