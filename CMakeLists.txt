@@ -35,8 +35,8 @@ target_link_libraries(risc_core PUBLIC risc_tools)
 # GUI library 
 file(GLOB_RECURSE GUI_SOURCES CONFIGURE_DEPENDS "src/gui/*.c")
 add_library(risc_gui STATIC ${GUI_SOURCES})
-target_include_directories(risc_gui PUBLIC src extern/raygui/src)
-target_link_libraries(risc_gui PUBLIC raylib)
+target_include_directories(risc_gui PUBLIC src src/gui extern/raygui/src)
+target_link_libraries(risc_gui PUBLIC raylib risc_core risc_tools)
 
 # Main executable
 add_executable(TakeTheRisc src/main.c)

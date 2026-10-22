@@ -1,10 +1,14 @@
 #include "gui/main_gui.h"
 
+#include "risc/risc_cpu.h"
+#include "risc/risc_memory.h"
 #include "tools/file_reader.h"
+#include "tools/logger.h"
+#include <stdio.h>
 
 int main(void)
 {
-    FileReaderLoadMemoryElf("/home/leonv/Projects/taketherisc/tests/riscv-tests/rv32ui-p-add", NULL);
-
-    return 0;
+    GuiInitialize(1280, 720, "Take the RISC-V");
+    GuiRun();
+    GuiDestroy();
 }
