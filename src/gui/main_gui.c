@@ -23,7 +23,21 @@ typedef enum Mode {
     DARK_MODE
 } Mode;
 
-typedef void (*Renderables)(void);
+typedef enum WindowId {
+    WINDOW_ID_CPU,
+    WINDOW_ID_LOADED_PROGRAM,
+    WINDOW_ID_COUNT
+} WindowId;
+
+static WindowId windowOrder[WINDOW_ID_COUNT] = {
+    WINDOW_ID_CPU,
+    WINDOW_ID_LOADED_PROGRAM
+};
+
+static void BringWindowToFront(WindowId id);
+static Rectangle GetWindowBounds(WindowId id);
+static void HandleWindowFocus(void);
+
 /* -------------------------------------------------------------------------- */
 
 /* ---------------------------- Callback handler ---------------------------- */
@@ -86,17 +100,28 @@ int GuiInitialize(int width, int height, const char *title)
 
 int GuiRun(void)
 {
-
     while (WindowShouldClose() == false)
     {
+        HandleWindowFocus();
+
         BeginDrawing();
         {
             ClearBackground(GRAY);
-            GuiCpu(&cpuState, &cpu);
+            
+            for (size_t i = 0; i < WINDOW_ID_COUNT; i++)
+            {
+                switch (windowOrder[i])
+                {
+                case WINDOW_ID_CPU: GuiCpu(&cpuState, &cpu); break;
+                case WINDOW_ID_LOADED_PROGRAM: GuiLoadedProgram(&loadedProgramState, &cpu); break;
+                default: break;
+                }
+            }
+            
+
             GuiHeadbar(&headbarState);
             GuiWindowFileDialog(&fileDialogState);
             GuiToast(&toastState);
-            GuiLoadedProgram(&loadedProgramState, &cpu);
         }
         EndDrawing();
     }
@@ -154,7 +179,7 @@ void CallbackStep(void)
 {
     LoggerMessage(DEBUG, "Step");
     RiscCpuExecute(&cpu);
-    cpuThreadRunning = true;
+    cpuThreadRunning = false;
 }
 
 void CallbackRun(void)
@@ -220,4 +245,59 @@ static void *CpuThread(void *arg)
     }
 
     return NULL;
+}
+
+static void BringWindowToFront(WindowId id)
+{
+    int index = -1;
+    for (size_t i = 0; i < WINDOW_ID_COUNT; i++)
+    {
+        if (windowOrder[i] == id)
+        {
+            index = i;
+            break;
+        }
+    }
+    
+    if (index != -1 && index < WINDOW_ID_COUNT - 1)
+    {
+        for (size_t i = index; i < WINDOW_ID_COUNT; i++)
+        {
+            windowOrder[i] = windowOrder[i + 1];
+        }
+        windowOrder[WINDOW_ID_COUNT - 1] = id;
+    }
+}
+
+static Rectangle GetWindowBounds(WindowId id)
+{
+    switch (id)
+    {
+    case WINDOW_ID_CPU: return cpuState.bounds;
+    case WINDOW_ID_LOADED_PROGRAM: return loadedProgramState.bounds;
+    default: return (Rectangle){ 0 };
+    }
+}
+
+static void HandleWindowFocus(void)
+{
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) == false) return;
+
+    if (fileDialogState.windowActive) return;
+
+    Vector2 mouse = GetMousePosition();
+    if (CheckCollisionPointRec(mouse, headbarState.bounds)) return;
+
+    for (size_t i = WINDOW_ID_COUNT - 1; i >= 0; i--)
+    {
+        WindowId id = windowOrder[i];
+        Rectangle bounds = GetWindowBounds(id);
+
+        if (CheckCollisionPointRec(mouse, bounds))
+        {
+            BringWindowToFront(id);
+            break;
+        }
+    }
+    
 }

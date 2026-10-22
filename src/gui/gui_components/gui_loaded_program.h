@@ -17,6 +17,8 @@ typedef struct GuiBreakpoint
 typedef struct GuiLoadedProgramState
 {
     Rectangle bounds;
+    Vector2 panOffset;
+    bool dragMode;
     Vector2 scroll;
     Rectangle view;
     bool isWindowActive;

@@ -49,8 +49,8 @@ GuiWindowFileDialogState InitGuiWindowFileDialog(const char *initPath, GuiWindow
     int parentWindowHeight = GetScreenHeight() * 0.8f;
 
     state.windowBounds = (Rectangle){ 
-        GetScreenWidth() / 2 - parentWindowWidth / 2, 
-        GetScreenHeight() / 2 - parentWindowHeight / 2, 
+        GetScreenWidth() / 2.0 - parentWindowWidth / 2.0, 
+        GetScreenHeight() / 2.0 - parentWindowHeight / 2.0, 
         parentWindowWidth, 
         parentWindowHeight };
     state.windowActive = false;

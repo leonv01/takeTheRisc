@@ -12,6 +12,8 @@ GuiLoadedProgramState InitGuiLoadedProgram(void)
 {
     GuiLoadedProgramState state = {
         .bounds = { 20, 60, 480, 500 },
+        .panOffset = { 0, 0 },
+        .dragMode = false,
         .scroll = { 0, 0 },
         .isWindowActive = true,
         .startAddress = RISC_MEMORY_DEFAULT_BASE,
@@ -32,9 +34,42 @@ void GuiLoadedProgram(GuiLoadedProgramState *state, const risc_cpu_t *cpu)
 {
     if (state->isWindowActive == false) return;
 
+    // Window dragging logic
+    Vector2 mouse = GetMousePosition();
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    {
+        Rectangle titleBar = { state->bounds.x, state->bounds.y, state->bounds.width - 24, 24 };
+        if (CheckCollisionPointRec(mouse, titleBar))
+        {
+            state->dragMode = true;
+            state->panOffset = (Vector2){ mouse.x - state->bounds.x, mouse.y - state->bounds.y };
+        }
+    }
+
+    if (state->dragMode)
+    {
+        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON))
+        {
+            state->bounds.x = mouse.x - state->panOffset.x;
+            state->bounds.y = mouse.y - state->panOffset.y;
+
+            if (state->bounds.x < 0) state->bounds.x = 0;
+            if (state->bounds.y < 40) state->bounds.y = 40;
+            if (state->bounds.x + state->bounds.width > GetScreenWidth())
+                state->bounds.x = GetScreenWidth() - state->bounds.width;
+            if (state->bounds.y + state->bounds.height > GetScreenHeight())
+                state->bounds.y = GetScreenHeight() - state->bounds.height;
+        }
+        else
+        {
+            state->dragMode = false;
+        }
+    }
+
     if (GuiWindowBox(state->bounds, "Loaded Program"))
     {
-        state->isWindowActive = !state->isWindowActive;
+        state->isWindowActive = false;
+        return;
     }
 
     // Define search field

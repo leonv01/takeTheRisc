@@ -4,16 +4,14 @@
 #include <raylib.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stddef.h>
 #include "risc/risc_cpu.h"
 
 #define REGISTER_COUNT 32
 
 typedef struct GuiCpuState {
     Rectangle bounds;
-    Vector2 position;
-    int width, height;
-    int minWidth, minHeight;
+    Vector2 panOffset;
+    bool dragMode;
     int padding;
     int fontSize;
 
