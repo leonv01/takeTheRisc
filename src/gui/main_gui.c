@@ -6,22 +6,12 @@
 
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
-
 #undef RAYGUI_IMPLEMENTATION
 
-#define GUI_CPU_IMPLEMENTATION
 #include "gui_components/gui_cpu.h"
-
-#define GUI_HEADBAR_IMPLEMENTATION
 #include "gui_components/gui_headbar.h"
-
-#define GUI_WINDOW_FILE_DIALOG_IMPLEMENTATION
 #include "gui_components/gui_file_dialog.h"
-
-#define GUI_TOAST_H_IMPLEMENTATION
 #include "gui_components/gui_toast.h"
-
-#define GUI_LOADED_PROGRAM_IMPLEMENTATION
 #include "gui_components/gui_loaded_program.h"
 
 #include <raylib.h>
@@ -102,7 +92,7 @@ int GuiRun(void)
         BeginDrawing();
         {
             ClearBackground(GRAY);
-            GuiCpu(&cpuState);
+            GuiCpu(&cpuState, &cpu);
             GuiHeadbar(&headbarState);
             GuiWindowFileDialog(&fileDialogState);
             GuiToast(&toastState);
