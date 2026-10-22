@@ -13,6 +13,7 @@
 #include "gui_components/gui_file_dialog.h"
 #include "gui_components/gui_toast.h"
 #include "gui_components/gui_loaded_program.h"
+#include "gui_components/gui_toolbar.h"
 
 #include <raylib.h>
 #include <pthread.h>
@@ -36,6 +37,7 @@ static WindowId windowOrder[WINDOW_ID_COUNT] = {
 
 static void BringWindowToFront(WindowId id);
 static Rectangle GetWindowBounds(WindowId id);
+static bool IsWindowActive(WindowId id);
 static void HandleWindowFocus(void);
 
 /* -------------------------------------------------------------------------- */
@@ -48,6 +50,8 @@ static void CallbackReset(void);
 static void CallbackOpenFile(void);
 static void CallbackClose(void);
 static void CallbackStop(void);
+static void CallbackOpenCpu(void);
+static void CallbackOpenLoadedProgram(void);
 /* -------------------------------------------------------------------------- */
 
 /* -------------------------------- Variables ------------------------------- */
@@ -64,6 +68,7 @@ GuiHeadbarState headbarState;
 GuiWindowFileDialogState fileDialogState;
 GuiToastState toastState;
 GuiLoadedProgramState loadedProgramState;
+GuiToolbarState toolbarState;
 
 static GuiHeadbarCallbacks guiHeadbarCallbacks = {
     .onLoadElf  = CallbackLoadElf,
@@ -71,6 +76,11 @@ static GuiHeadbarCallbacks guiHeadbarCallbacks = {
     .onRun      = CallbackRun,
     .onReset    = CallbackReset,
     .onStop     = CallbackStop
+};
+
+static GuiToolbarCallbacks guiToolbarCallbacks = {
+    .onOpenCpu = CallbackOpenCpu,
+    .onOpenLoadedProgram = CallbackOpenLoadedProgram
 };
 
 static GuiWindowFileDialogCallbacks guiWindowFileDialogCallbacks = {
@@ -120,6 +130,7 @@ int GuiRun(void)
             
 
             GuiHeadbar(&headbarState);
+            GuiToolbar(&toolbarState);
             GuiWindowFileDialog(&fileDialogState);
             GuiToast(&toastState);
         }
@@ -150,6 +161,7 @@ static int InitializeComponents(void)
     fileDialogState = InitGuiWindowFileDialog(GetWorkingDirectory(), guiWindowFileDialogCallbacks);
     toastState = InitGuiToastState();
     loadedProgramState = InitGuiLoadedProgram();
+    toolbarState = InitGuiToolbar(guiToolbarCallbacks);
     pthread_create(&cpuThread, NULL, CpuThread, NULL);
 
     return 0;
@@ -219,7 +231,18 @@ void CallbackClose(void)
 
 }
 
-static void *CpuThread(void *arg)
+void CallbackOpenCpu(void)
+{
+    cpuState.isWindowActive = !cpuState.isWindowActive;
+}
+
+void CallbackOpenLoadedProgram(void)
+{
+    loadedProgramState.isWindowActive = !loadedProgramState.isWindowActive;
+}
+
+
+void *CpuThread(void *arg)
 {
     LoggerMessage(DEBUG, "Thread initialized");
     while (emulatorActive)
@@ -250,7 +273,7 @@ static void *CpuThread(void *arg)
 static void BringWindowToFront(WindowId id)
 {
     int index = -1;
-    for (size_t i = 0; i < WINDOW_ID_COUNT; i++)
+    for (int i = 0; i < (int)WINDOW_ID_COUNT; i++)
     {
         if (windowOrder[i] == id)
         {
@@ -259,9 +282,9 @@ static void BringWindowToFront(WindowId id)
         }
     }
     
-    if (index != -1 && index < WINDOW_ID_COUNT - 1)
+    if (index != -1 && index < (int)WINDOW_ID_COUNT - 1)
     {
-        for (size_t i = index; i < WINDOW_ID_COUNT; i++)
+        for (int i = index; i < (int)WINDOW_ID_COUNT - 1; i++)
         {
             windowOrder[i] = windowOrder[i + 1];
         }
@@ -279,6 +302,16 @@ static Rectangle GetWindowBounds(WindowId id)
     }
 }
 
+static bool IsWindowActive(WindowId id)
+{
+    switch (id)
+    {
+    case WINDOW_ID_CPU:            return cpuState.isWindowActive;
+    case WINDOW_ID_LOADED_PROGRAM: return loadedProgramState.isWindowActive;
+    default:                       return false;
+    }
+}
+
 static void HandleWindowFocus(void)
 {
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) == false) return;
@@ -287,17 +320,18 @@ static void HandleWindowFocus(void)
 
     Vector2 mouse = GetMousePosition();
     if (CheckCollisionPointRec(mouse, headbarState.bounds)) return;
+    if (CheckCollisionPointRec(mouse, toolbarState.bounds)) return;
 
-    for (size_t i = WINDOW_ID_COUNT - 1; i >= 0; i--)
+    for (int i = (int)WINDOW_ID_COUNT - 1; i >= 0; i--)
     {
         WindowId id = windowOrder[i];
-        Rectangle bounds = GetWindowBounds(id);
+        if (!IsWindowActive(id)) continue;
 
+        Rectangle bounds = GetWindowBounds(id);
         if (CheckCollisionPointRec(mouse, bounds))
         {
             BringWindowToFront(id);
             break;
         }
     }
-    
 }
