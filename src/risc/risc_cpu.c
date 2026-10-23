@@ -2,7 +2,11 @@
 #include "risc/risc_memory.h"
 #include "tools/logger.h"
 
+#include <stdint.h>
 #include <string.h>
+
+#define RISCV_EXTENSION_M
+#define RISCV_XLEN 32
 
 static inline int RiscOpError(risc_cpu_t *cpu, uint32_t instruction);
 
@@ -103,6 +107,15 @@ int RiscOpArithmeticR(risc_cpu_t *cpu, uint32_t instruction)
 
     int status = 0;
 
+    #ifdef RISCV_EXTENSION_M
+    int64_t s1;
+    int64_t s2;
+    int64_t us1;
+    int64_t us2;
+    int64_t res;
+    uint64_t ures;
+    #endif // RISCV_EXTENSION_M
+
     switch (funct10)
     {
         case 0b0000000000:
@@ -159,6 +172,52 @@ int RiscOpArithmeticR(risc_cpu_t *cpu, uint32_t instruction)
                 reg[rd] = 0;
             }
             break;
+#ifdef RISCV_EXTENSION_M
+        
+        case 0b0000001000:
+            // MUL
+            reg[rd] = (uint32_t)((int32_t)reg[rs1] * (int32_t)reg[rs2]);
+            break;
+        case 0b0000001001:
+            // MULH
+            s1 = (int64_t)(int32_t)reg[rs1];
+            s2 = (int64_t)(int32_t)reg[rs2];
+            res = s1 * s2;
+            reg[rd] = (uint32_t)(res >> RISCV_XLEN);
+            break;
+        case 0b0000001010:
+            // MULHSU
+            s1 = (int64_t)(int32_t)reg[rs1];
+            us2 = (uint64_t)reg[rs2];
+            res = s1 * (int64_t)us2;
+            reg[rd] = (uint32_t)(res >> RISCV_XLEN);
+            break;
+        case 0b0000001011:
+            // MULHU
+            us1 = (uint64_t)reg[rs1];
+            us2 = (uint64_t)reg[rs2];
+            ures = us1 * us2;
+            reg[rd] = (uint32_t)(ures >> RISCV_XLEN);
+            break;
+        case 0b0000001100:
+            // DIV
+            if (reg[rs2] == 0)
+            {
+                // TODO: Handle error
+            }
+            reg[rd] = (uint32_t)((int32_t)reg[rs1] / (int32_t)reg[rs2]);
+            break;
+        case 0b0000001101:
+            // DIVU
+            break;
+        case 0b0000001110:
+            // REM
+            break;
+        case 0b0000001111:
+            // REMU
+            break;
+
+#endif // RISCV_EXTENSION_M
         default:
             status = 1;
             break;
