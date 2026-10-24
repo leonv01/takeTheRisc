@@ -14,6 +14,7 @@ static inline uint32_t InstructionGetRs1(uint32_t instruction);
 static inline uint32_t InstructionGetRs2(uint32_t instruction);
 static inline uint32_t InstructionGetFunct3(uint32_t instruction);
 static inline uint32_t InstructionGetFunct7(uint32_t instruction);
+static inline uint32_t InstructionGetCsr(uint32_t instruction);
 static inline uint32_t InstructionGetImmI(uint32_t instruction);
 static inline uint32_t InstructionGetImmS(uint32_t instruction);
 static inline uint32_t InstructionGetImmB(uint32_t instruction);
@@ -27,7 +28,7 @@ int RiscCpuInitialize(risc_cpu_t *cpu, risc_memory_t *memory)
         RiscMemoryInitialize(memory, RISC_MEMORY_DEFAULT_BASE, RISC_MEMORY_DEFAULT_SIZE);
     }
 
-    memset(cpu->registers, 0, sizeof(uint32_t) * RISC_INSTRUCTION_32I_COUNT);
+    memset(cpu->registers, 0, sizeof(uint32_t) * RISC_REGISTER_COUNT);
     cpu->pc = 0x00000000;
 
     cpu->memory = memory;
@@ -523,10 +524,102 @@ int RiscOpUpperImm(risc_cpu_t *cpu, uint32_t instruction)
 
 int RiscOpSystem(risc_cpu_t *cpu, uint32_t instruction)
 {
+    uint32_t rd = InstructionGetRd(instruction);
+    uint32_t funct3 = InstructionGetFunct3(instruction);
+    uint32_t rs1 = InstructionGetRs1(instruction);
+    uint32_t csr = InstructionGetCsr(instruction);
+    uint32_t imm = rs1;
+    uint32_t *reg = &cpu->registers[0];
+
+    // ECALL
     if (instruction == 0x00000073)
     {
         cpu->halted = true;
     }
+
+    #ifdef RISCV_EXTENSION_ZICSR
+    uint32_t oldValue = 0;
+
+    switch (funct3)
+    {
+        // CSRRW
+        case 0b001:
+            if (rd != RISC_ABI_ZERO)
+            {
+                oldValue = cpu->csrs[csr];
+            }
+            
+            cpu->csrs[csr] = reg[rs1];
+
+            if (rd != RISC_ABI_ZERO)
+            {
+                reg[rd] = oldValue;
+            }
+
+            break;
+        // CSRRS
+        case 0b010:
+            oldValue = cpu->csrs[csr];
+            
+            if (rs1 != RISC_ABI_ZERO)
+            {
+                cpu->csrs[csr] = oldValue | reg[rs1];
+            }
+
+            if (rd != RISC_ABI_ZERO)
+            {
+                reg[rd] = oldValue;
+            }
+            break;
+        // CSRRC
+        case 0b011:
+            oldValue = cpu->csrs[csr];
+            
+            if (rs1 != RISC_ABI_ZERO)
+            {
+                cpu->csrs[csr] = oldValue ^ reg[rs1];
+            }
+
+            if (rd != RISC_ABI_ZERO)
+            {
+                reg[rd] = oldValue;
+            }
+            break;
+        // CSRRWI
+        case 0b101:
+            oldValue = cpu->csrs[csr];
+            
+            cpu->csrs[csr] = imm;
+
+            if (rd != RISC_ABI_ZERO)
+            {
+                reg[rd] = oldValue;
+            }
+            break;
+        // CSRRSI
+        case 0b110:
+            oldValue = cpu->csrs[csr];
+            
+            cpu->csrs[csr] = oldValue ^ imm;
+
+            if (rd != RISC_ABI_ZERO)
+            {
+                reg[rd] = oldValue;
+            }
+            break;
+        // CSRRCI
+        case 0b111:
+            oldValue = cpu->csrs[csr];
+            
+            cpu->csrs[csr] = oldValue ^ imm;
+
+            if (rd != RISC_ABI_ZERO)
+            {
+                reg[rd] = oldValue;
+            }
+            break;
+    }
+    #endif // RISCV_EXTENSION_ZICSR
 
     return 0;
 }
@@ -565,6 +658,11 @@ uint32_t InstructionGetFunct3(uint32_t instruction)
 uint32_t InstructionGetFunct7(uint32_t instruction)
 {
     return (instruction >> 25) & 0x7F;
+}
+
+uint32_t InstructionGetCsr(uint32_t instruction)
+{
+    return instruction >> 20;
 }
 
 /* ------------------------------- Immediates ------------------------------- */

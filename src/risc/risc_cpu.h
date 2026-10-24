@@ -6,10 +6,12 @@
 
 #include "risc/risc_memory.h"
 
-#define RISC_INSTRUCTION_32I_COUNT 32
+#define RISC_REGISTER_COUNT 32
+#define RISC_CSR_COUNT 4096
 #define RISC_INSTRUCTION_HANDLER_COUNT_32I_COUNT 32
 
 #define RISCV_EXTENSION_M
+#define RISCV_EXTENSION_ZICSR
 #define RISCV_XLEN 32
 
 #define RISC_ADDRESS_TOHOST 0x80001000
@@ -29,7 +31,8 @@ typedef enum RISC_ABI
 
 typedef struct risc_cpu_t
 {
-    uint32_t registers[RISC_INSTRUCTION_32I_COUNT];
+    uint32_t registers[RISC_REGISTER_COUNT];
+    uint32_t csrs[RISC_CSR_COUNT];
     uint32_t pc;
 
     InstructionTypeHandler instructionTypeHandler[RISC_INSTRUCTION_HANDLER_COUNT_32I_COUNT];
