@@ -118,6 +118,19 @@ void test_rv32um_p_remu(void) { test_riscv32("rv32um-p-remu"); }
 void test_rv32mi_p_csr(void) { test_riscv32("rv32mi-p-csr"); }
 #endif // RISCV_EXTENSION_ZICSR
 
+#ifdef RISCV_EXTENSION_A
+void test_rv32ua_p_lrsc(void) { test_riscv32("rv32ua-p-lrsc"); }
+void test_rv32ua_p_amoadd(void) { test_riscv32("rv32ua-p-amoadd_w"); }
+void test_rv32ua_p_amoand(void) { test_riscv32("rv32ua-p-amoand_w"); }
+void test_rv32ua_p_amomax(void) { test_riscv32("rv32ua-p-amomax_w"); }
+void test_rv32ua_p_amomin(void) { test_riscv32("rv32ua-p-amomin_w"); }
+void test_rv32ua_p_amomaxu(void) { test_riscv32("rv32ua-p-amomaxu_w"); }
+void test_rv32ua_p_amominu(void) { test_riscv32("rv32ua-p-amominu_w"); }
+void test_rv32ua_p_amoor(void) { test_riscv32("rv32ua-p-amoor_w"); }
+void test_rv32ua_p_amoxor(void) { test_riscv32("rv32ua-p-amoxor_w"); }
+void test_rv32ua_p_amoswap(void) { test_riscv32("rv32ua-p-amoswap_w"); }
+#endif // RISCV_EXTENSION_A 
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -179,6 +192,19 @@ int main(void)
     #ifdef RISCV_EXTENSION_ZICSR
     RUN_TEST(test_rv32mi_p_csr);
     #endif // RISCV_EXTENSION_ZICSR
+
+    #ifdef RISCV_EXTENSION_A
+    RUN_TEST(test_rv32ua_p_lrsc);
+    RUN_TEST(test_rv32ua_p_amoadd);
+    RUN_TEST(test_rv32ua_p_amoand);
+    RUN_TEST(test_rv32ua_p_amomax);
+    RUN_TEST(test_rv32ua_p_amomin);
+    RUN_TEST(test_rv32ua_p_amomaxu);
+    RUN_TEST(test_rv32ua_p_amominu);
+    RUN_TEST(test_rv32ua_p_amoor);
+    RUN_TEST(test_rv32ua_p_amoxor);
+    RUN_TEST(test_rv32ua_p_amoswap);
+    #endif // RISCV_EXTENSION_A
 
     UNITY_END();
 }

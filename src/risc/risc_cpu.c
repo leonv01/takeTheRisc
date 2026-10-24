@@ -2,6 +2,7 @@
 #include "risc/risc_memory.h"
 #include "tools/logger.h"
 
+#include <X11/Xlib.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -20,6 +21,9 @@ static inline uint32_t InstructionGetImmS(uint32_t instruction);
 static inline uint32_t InstructionGetImmB(uint32_t instruction);
 static inline uint32_t InstructionGetImmU(uint32_t instruction);
 static inline uint32_t InstructionGetImmJ(uint32_t instruction);
+static inline uint32_t InstructionGetRl(uint32_t instruction);
+static inline uint32_t InstructionGetAq(uint32_t instruction);
+static inline uint32_t InstructionGetFunc5(uint32_t instruction);
 
 int RiscCpuInitialize(risc_cpu_t *cpu, risc_memory_t *memory)
 {
@@ -49,7 +53,13 @@ int RiscCpuInitialize(risc_cpu_t *cpu, risc_memory_t *memory)
     cpu->instructionTypeHandler[0b00101] = &RiscOpUpperImm;
     cpu->instructionTypeHandler[0b11100] = &RiscOpSystem;
 
+    #ifdef RISCV_EXTENSION_A
+    cpu->instructionTypeHandler[0b01011] = &RiscOpAmo;
+    #endif // RISCV_EXTENSION_A
+
     cpu->halted = false;
+    cpu->reservationAddress = 0x00;
+    cpu->reservationValid = false;
 
     return 0;
 }
@@ -624,6 +634,150 @@ int RiscOpSystem(risc_cpu_t *cpu, uint32_t instruction)
     return 0;
 }
 
+int RiscOpAmo(risc_cpu_t *cpu, uint32_t instruction)
+{
+    uint32_t rd = InstructionGetRd(instruction);
+    uint32_t funct3 = InstructionGetFunct3(instruction);
+    uint32_t rs1 = InstructionGetRs1(instruction);
+    uint32_t rs2 = InstructionGetRs2(instruction);
+    uint32_t rl = InstructionGetRl(instruction);
+    uint32_t aq = InstructionGetAq(instruction);
+    uint32_t funct5 = InstructionGetFunc5(instruction);
+
+    uint32_t *reg = &cpu->registers[0];
+
+    uint32_t funct8 = (funct5 << 3) | funct3;
+
+    uint32_t originalValue = 0;
+
+    switch (funct8)
+    {
+        // LR.W
+        case 0b00010010:
+            RiscMemoryRead(cpu->memory, reg[rs1], DWORD, &originalValue);
+            cpu->reservationAddress = reg[rs1];
+            cpu->reservationValid = true;
+            if (rd != RISC_ABI_ZERO)
+            {
+                reg[rd] = originalValue;
+            }
+            break;
+        // SC.W
+        case 0b00011010:
+            if (cpu->reservationValid && cpu->reservationAddress == reg[rs1])
+            {
+                RiscMemoryWrite(cpu->memory, reg[rs1], DWORD, reg[rs2]);
+                if (rd != RISC_ABI_ZERO)
+                {
+                    reg[rd] = 0;
+                }
+            }
+            else
+            {
+                if (rd != RISC_ABI_ZERO)
+                {
+                    reg[rd] = 1;
+                }
+            }
+
+            cpu->reservationValid = false;
+            break;
+        // AMOSWAP.W
+        case 0b00001010:
+            RiscMemoryRead(cpu->memory, reg[rs1], DWORD, &originalValue);
+            RiscMemoryWrite(cpu->memory, reg[rs1], DWORD, reg[rs2]);
+
+            if (rd != RISC_ABI_ZERO)
+            {
+                reg[rd] = originalValue;
+            }
+
+            break;
+        // AMOADD.W
+        case 0b00000010:
+            RiscMemoryRead(cpu->memory, reg[rs1], DWORD, &originalValue);
+            RiscMemoryWrite(cpu->memory, reg[rs1], DWORD, reg[rs2] + originalValue);
+
+            if (rd != RISC_ABI_ZERO)
+            {
+                reg[rd] = originalValue;
+            }
+            break;
+        // AMOXOR.W
+        case 0b00100010:
+            RiscMemoryRead(cpu->memory, reg[rs1], DWORD, &originalValue);
+            RiscMemoryWrite(cpu->memory, reg[rs1], DWORD, originalValue ^ reg[rs2]);
+
+            if (rd != RISC_ABI_ZERO)
+            {
+                reg[rd] = originalValue;
+            }
+            break;
+        // AMOAND.W
+        case 0b01100010:
+            RiscMemoryRead(cpu->memory, reg[rs1], DWORD, &originalValue);
+            RiscMemoryWrite(cpu->memory, reg[rs1], DWORD, originalValue & reg[rs2]);
+
+            if (rd != RISC_ABI_ZERO)
+            {
+                reg[rd] = originalValue;
+            }
+            break;
+        // AMOOR.W
+        case 0b01000010:
+            RiscMemoryRead(cpu->memory, reg[rs1], DWORD, &originalValue);
+            RiscMemoryWrite(cpu->memory, reg[rs1], DWORD, originalValue | reg[rs2]);
+
+            if (rd != RISC_ABI_ZERO)
+            {
+                reg[rd] = originalValue;
+            }
+            break;
+        // AMOMIN.W
+        case 0b10000010:
+            RiscMemoryRead(cpu->memory, reg[rs1], DWORD, &originalValue);
+            RiscMemoryWrite(cpu->memory, reg[rs1], DWORD, (int32_t)originalValue < (int32_t)reg[rs2] ? originalValue : reg[rs2]);
+
+            if (rd != RISC_ABI_ZERO)
+            {
+                reg[rd] = originalValue;
+            }
+            break;
+        // AMOMAX.W
+        case 0b10100010:
+            RiscMemoryRead(cpu->memory, reg[rs1], DWORD, &originalValue);
+            RiscMemoryWrite(cpu->memory, reg[rs1], DWORD, (int32_t)originalValue > (int32_t)reg[rs2] ? originalValue : reg[rs2]);
+
+            if (rd != RISC_ABI_ZERO)
+            {
+                reg[rd] = originalValue;
+            }
+            break;
+        // AMOMINU.W
+        case 0b11000010:
+            RiscMemoryRead(cpu->memory, reg[rs1], DWORD, &originalValue);
+            RiscMemoryWrite(cpu->memory, reg[rs1], DWORD, (uint32_t)originalValue < (uint32_t) reg[rs2] ? (uint32_t) originalValue : (uint32_t) reg[rs2]);
+
+            if (rd != RISC_ABI_ZERO)
+            {
+                reg[rd] = originalValue;
+            }
+            break;
+        // AMOMAXU.W
+        case 0b11100010:
+            RiscMemoryRead(cpu->memory, reg[rs1], DWORD, &originalValue);
+            RiscMemoryWrite(cpu->memory, reg[rs1], DWORD, (uint32_t)originalValue > (uint32_t) reg[rs2] ? (uint32_t) originalValue : (uint32_t) reg[rs2]);
+
+            if (rd != RISC_ABI_ZERO)
+            {
+                reg[rd] = originalValue;
+            }
+            break;
+    }
+
+    return 0;
+}
+
 int RiscOpError(risc_cpu_t *cpu, uint32_t instruction)
 {
     return 0;
@@ -706,6 +860,21 @@ uint32_t InstructionGetImmJ(uint32_t instruction)
     imm |= ((int32_t)((instruction >> 21) & 0x3FF) << 1);
 
     return (uint32_t) imm;
+}
+
+uint32_t InstructionGetRl(uint32_t instruction)
+{
+    return (instruction >> 25) & 0x01;
+}
+
+uint32_t InstructionGetAq(uint32_t instruction)
+{
+    return (instruction >> 26) & 0x01;
+}
+
+uint32_t InstructionGetFunc5(uint32_t instruction)
+{
+    return (instruction >> 27) & 0x1F;
 }
 
 /* -------------------------------------------------------------------------- */
