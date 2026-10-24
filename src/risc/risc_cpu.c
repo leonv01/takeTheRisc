@@ -5,8 +5,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#define RISCV_EXTENSION_M
-#define RISCV_XLEN 32
 
 static inline int RiscOpError(risc_cpu_t *cpu, uint32_t instruction);
 
@@ -114,6 +112,11 @@ int RiscOpArithmeticR(risc_cpu_t *cpu, uint32_t instruction)
     int64_t us2;
     int64_t res;
     uint64_t ures;
+
+    int32_t dividend = (int32_t) reg[rs1];
+    int32_t divisor = (int32_t) reg[rs2];
+    uint32_t udividend = (uint32_t) reg[rs1];
+    uint32_t udivisor = (uint32_t) reg[rs2];
     #endif // RISCV_EXTENSION_M
 
     switch (funct10)
@@ -201,22 +204,59 @@ int RiscOpArithmeticR(risc_cpu_t *cpu, uint32_t instruction)
             break;
         case 0b0000001100:
             // DIV
-            if (reg[rs2] == 0)
+            // division by zero
+            if (divisor == 0) 
             {
-                // TODO: Handle error
+                reg[rd] = UINT32_MAX;
             }
-            reg[rd] = (uint32_t)((int32_t)reg[rs1] / (int32_t)reg[rs2]);
+            // division overflow
+            else if (dividend == INT32_MIN && divisor == -1)
+            {
+                reg[rd] = (uint32_t)INT32_MIN;
+            }
+            else
+            {
+                reg[rd] = (uint32_t)(dividend / divisor);
+            }
             break;
         case 0b0000001101:
             // DIVU
+            // division by zero
+            if (udivisor == 0)
+            {
+                reg[rd] = UINT32_MAX;
+            }
+            else
+            {
+                reg[rd] = udividend / udivisor;
+            }
             break;
         case 0b0000001110:
             // REM
+            if (divisor == 0)
+            {
+                reg[rd] = (uint32_t)dividend;
+            }
+            else if (dividend == INT32_MIN && divisor == -1)
+            {
+                reg[rd] = 0;
+            }
+            else
+            {
+                reg[rd] = (uint32_t)(dividend % divisor);
+            }
             break;
         case 0b0000001111:
             // REMU
+            if (udivisor == 0)
+            {
+                reg[rd] = udividend;
+            }
+            else
+            {
+                reg[rd] = udividend % udivisor;
+            }
             break;
-
 #endif // RISCV_EXTENSION_M
         default:
             status = 1;
