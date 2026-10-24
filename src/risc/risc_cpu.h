@@ -11,6 +11,7 @@
 #define RISC_INSTRUCTION_HANDLER_COUNT_32I_COUNT 32
 
 #define RISCV_EXTENSION_M
+#define RISCV_EXTENSION_A
 #define RISCV_EXTENSION_ZICSR
 #define RISCV_XLEN 32
 
@@ -40,6 +41,9 @@ typedef struct risc_cpu_t
     risc_memory_t *memory;
 
     bool halted;
+
+    uint32_t reservationAddress;
+    bool reservationValid;
 } risc_cpu_t;
 
 /* -------------------------------------------------------------------------- */
@@ -148,6 +152,8 @@ int RiscOpUpperImm(risc_cpu_t *cpu, uint32_t instruction);
  * @return int status code
  */
 int RiscOpSystem(risc_cpu_t *cpu, uint32_t instruction);
+
+int RiscOpAmo(risc_cpu_t *cpu, uint32_t instruction);
 
 uint32_t RiscInstructionCreateR(
     uint32_t opcode, 
