@@ -1,0 +1,10 @@
+# Ignore all files in this directory by default
+*
+
+# Allow .gitignore
+!.gitignore
+
+# Allow RV32 compliance test binaries
+!rv32ui-p-*
+!rv32um-p-*
+!rv32mi-p-*
