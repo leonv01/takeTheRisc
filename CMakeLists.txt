@@ -45,8 +45,21 @@ target_link_libraries(TakeTheRisc PRIVATE risc_core risc_tools risc_gui)
 # Enable CTest
 enable_testing()
 
+# Copy relevant RISC-V test files into the build directory if present
+file(GLOB RISCV_TEST_FILES CONFIGURE_DEPENDS 
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/riscv-tests/rv32ui-p-*"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/riscv-tests/rv32um-p-*"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/riscv-tests/rv32mi-p-*"
+)
+
 # Automatically discover and register all tests in tests/
 file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "tests/*.c")
+
+# If no RISC-V test binaries exist (e.g. in a fresh git clone), skip the riscv-tests runner
+if(NOT RISCV_TEST_FILES)
+    list(FILTER TEST_SOURCES EXCLUDE REGEX "test_cpu_riscv_tests\\.c$")
+    message(STATUS "RISC-V compliance test files not found; skipping test_cpu_riscv_tests")
+endif()
 
 foreach(TEST_SOURCE ${TEST_SOURCES})
     get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
