@@ -288,3 +288,4 @@ The AI assistant was utilized as an interactive pair programmer for refactoring,
 - [Binary Loading Process in RISC-V Emulators](https://deepwiki.com/fmash16/riscv_emulator/7.1-binary-loading)
 - [Extracting the Raw Contents of an ELF Section](https://www.baeldung.com/linux/file-elf-extract-raw-contents)
 - [Official RISC-V User-Level ISA Specification](https://riscv.org/technical/specifications/)
+- ["M" Extension for Integer Multiplication and Division, Version 2.0](https://docs.riscv.org/reference/isa/v20260120/unpriv/m-st-ext.html)

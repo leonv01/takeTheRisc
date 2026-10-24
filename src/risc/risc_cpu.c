@@ -2,7 +2,9 @@
 #include "risc/risc_memory.h"
 #include "tools/logger.h"
 
+#include <stdint.h>
 #include <string.h>
+
 
 static inline int RiscOpError(risc_cpu_t *cpu, uint32_t instruction);
 
@@ -103,6 +105,20 @@ int RiscOpArithmeticR(risc_cpu_t *cpu, uint32_t instruction)
 
     int status = 0;
 
+    #ifdef RISCV_EXTENSION_M
+    int64_t s1;
+    int64_t s2;
+    int64_t us1;
+    int64_t us2;
+    int64_t res;
+    uint64_t ures;
+
+    int32_t dividend = (int32_t) reg[rs1];
+    int32_t divisor = (int32_t) reg[rs2];
+    uint32_t udividend = (uint32_t) reg[rs1];
+    uint32_t udivisor = (uint32_t) reg[rs2];
+    #endif // RISCV_EXTENSION_M
+
     switch (funct10)
     {
         case 0b0000000000:
@@ -159,6 +175,89 @@ int RiscOpArithmeticR(risc_cpu_t *cpu, uint32_t instruction)
                 reg[rd] = 0;
             }
             break;
+#ifdef RISCV_EXTENSION_M
+        
+        case 0b0000001000:
+            // MUL
+            reg[rd] = (uint32_t)((int32_t)reg[rs1] * (int32_t)reg[rs2]);
+            break;
+        case 0b0000001001:
+            // MULH
+            s1 = (int64_t)(int32_t)reg[rs1];
+            s2 = (int64_t)(int32_t)reg[rs2];
+            res = s1 * s2;
+            reg[rd] = (uint32_t)(res >> RISCV_XLEN);
+            break;
+        case 0b0000001010:
+            // MULHSU
+            s1 = (int64_t)(int32_t)reg[rs1];
+            us2 = (uint64_t)reg[rs2];
+            res = s1 * (int64_t)us2;
+            reg[rd] = (uint32_t)(res >> RISCV_XLEN);
+            break;
+        case 0b0000001011:
+            // MULHU
+            us1 = (uint64_t)reg[rs1];
+            us2 = (uint64_t)reg[rs2];
+            ures = us1 * us2;
+            reg[rd] = (uint32_t)(ures >> RISCV_XLEN);
+            break;
+        case 0b0000001100:
+            // DIV
+            // division by zero
+            if (divisor == 0) 
+            {
+                reg[rd] = UINT32_MAX;
+            }
+            // division overflow
+            else if (dividend == INT32_MIN && divisor == -1)
+            {
+                reg[rd] = (uint32_t)INT32_MIN;
+            }
+            else
+            {
+                reg[rd] = (uint32_t)(dividend / divisor);
+            }
+            break;
+        case 0b0000001101:
+            // DIVU
+            // division by zero
+            if (udivisor == 0)
+            {
+                reg[rd] = UINT32_MAX;
+            }
+            else
+            {
+                reg[rd] = udividend / udivisor;
+            }
+            break;
+        case 0b0000001110:
+            // REM
+            if (divisor == 0)
+            {
+                reg[rd] = (uint32_t)dividend;
+            }
+            else if (dividend == INT32_MIN && divisor == -1)
+            {
+                reg[rd] = 0;
+            }
+            else
+            {
+                reg[rd] = (uint32_t)(dividend % divisor);
+            }
+            break;
+        case 0b0000001111:
+            // REMU
+            if (udivisor == 0)
+            {
+                reg[rd] = udividend;
+            }
+            else
+            {
+                reg[rd] = udividend % udivisor;
+            }
+            break;
+#endif // RISCV_EXTENSION_M
         default:
             status = 1;
             break;

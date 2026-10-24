@@ -8,6 +8,8 @@
 
 #define MAX_CYCLES 10000
 
+#define RISC_EXTENSION_M
+
 static risc_cpu_t cpu;
 static risc_memory_t memory;
 
@@ -50,7 +52,7 @@ static void run_riscv_test(const char *file)
 
 /* -------------------------------------------------------------------------- */
 
-void test_riscv32ui(const char *testcase)
+void test_riscv32(const char *testcase)
 {
     char buffer[128];
     const char *path = "tests/riscv-tests";
@@ -60,49 +62,59 @@ void test_riscv32ui(const char *testcase)
     run_riscv_test(buffer);
 }
 
-void test_rv32ui_p_add(void) { test_riscv32ui("rv32ui-p-add"); }
-void test_rv32ui_p_addi(void) { test_riscv32ui("rv32ui-p-addi"); }
-void test_rv32ui_p_and(void) { test_riscv32ui("rv32ui-p-and"); }
-void test_rv32ui_p_andi(void) { test_riscv32ui("rv32ui-p-andi"); }
-void test_rv32ui_p_auipc(void) { test_riscv32ui("rv32ui-p-auipc"); }
-void test_rv32ui_p_beq(void) { test_riscv32ui("rv32ui-p-beq"); }
-void test_rv32ui_p_bge(void) { test_riscv32ui("rv32ui-p-bge"); }
-void test_rv32ui_p_bgeu(void) { test_riscv32ui("rv32ui-p-bgeu"); }
-void test_rv32ui_p_blt(void) { test_riscv32ui("rv32ui-p-blt"); }
-void test_rv32ui_p_bltu(void) { test_riscv32ui("rv32ui-p-bltu"); }
-void test_rv32ui_p_bne(void) { test_riscv32ui("rv32ui-p-bne"); }
-void test_rv32ui_p_fence_i(void) { test_riscv32ui("rv32ui-p-fence_i"); }
-void test_rv32ui_p_jal(void) { test_riscv32ui("rv32ui-p-jal"); }
-void test_rv32ui_p_jalr(void) { test_riscv32ui("rv32ui-p-jalr"); }
-void test_rv32ui_p_lb(void) { test_riscv32ui("rv32ui-p-lb"); }
-void test_rv32ui_p_lbu(void) { test_riscv32ui("rv32ui-p-lbu"); }
-void test_rv32ui_p_ld_st(void) { test_riscv32ui("rv32ui-p-ld_st"); }
-void test_rv32ui_p_lh(void) { test_riscv32ui("rv32ui-p-lh"); }
-void test_rv32ui_p_lhu(void) { test_riscv32ui("rv32ui-p-lhu"); }
-void test_rv32ui_p_lui(void) { test_riscv32ui("rv32ui-p-lui"); }
-void test_rv32ui_p_lw(void) { test_riscv32ui("rv32ui-p-lw"); }
-void test_rv32ui_p_ma_data(void) { test_riscv32ui("rv32ui-p-ma_data"); }
-void test_rv32ui_p_or(void) { test_riscv32ui("rv32ui-p-or"); }
-void test_rv32ui_p_ori(void) { test_riscv32ui("rv32ui-p-ori"); }
-void test_rv32ui_p_sb(void) { test_riscv32ui("rv32ui-p-sb"); }
-void test_rv32ui_p_sh(void) { test_riscv32ui("rv32ui-p-sh"); }
-void test_rv32ui_p_simple(void) { test_riscv32ui("rv32ui-p-simple"); }
-void test_rv32ui_p_sll(void) { test_riscv32ui("rv32ui-p-sll"); }
-void test_rv32ui_p_slli(void) { test_riscv32ui("rv32ui-p-slli"); }
-void test_rv32ui_p_slt(void) { test_riscv32ui("rv32ui-p-slt"); }
-void test_rv32ui_p_slti(void) { test_riscv32ui("rv32ui-p-slti"); }
-void test_rv32ui_p_sltiu(void) { test_riscv32ui("rv32ui-p-sltiu"); }
-void test_rv32ui_p_sltu(void) { test_riscv32ui("rv32ui-p-sltu"); }
-void test_rv32ui_p_sra(void) { test_riscv32ui("rv32ui-p-sra"); }
-void test_rv32ui_p_srai(void) { test_riscv32ui("rv32ui-p-srai"); }
-void test_rv32ui_p_srl(void) { test_riscv32ui("rv32ui-p-srl"); }
-void test_rv32ui_p_srli(void) { test_riscv32ui("rv32ui-p-srli"); }
-void test_rv32ui_p_st_ld(void) { test_riscv32ui("rv32ui-p-st_ld"); }
-void test_rv32ui_p_sub(void) { test_riscv32ui("rv32ui-p-sub"); }
-void test_rv32ui_p_sw(void) { test_riscv32ui("rv32ui-p-sw"); }
-void test_rv32ui_p_xor(void) { test_riscv32ui("rv32ui-p-xor"); }
-void test_rv32ui_p_xori(void) { test_riscv32ui("rv32ui-p-xori"); }
+void test_rv32ui_p_add(void) { test_riscv32("rv32ui-p-add"); }
+void test_rv32ui_p_addi(void) { test_riscv32("rv32ui-p-addi"); }
+void test_rv32ui_p_and(void) { test_riscv32("rv32ui-p-and"); }
+void test_rv32ui_p_andi(void) { test_riscv32("rv32ui-p-andi"); }
+void test_rv32ui_p_auipc(void) { test_riscv32("rv32ui-p-auipc"); }
+void test_rv32ui_p_beq(void) { test_riscv32("rv32ui-p-beq"); }
+void test_rv32ui_p_bge(void) { test_riscv32("rv32ui-p-bge"); }
+void test_rv32ui_p_bgeu(void) { test_riscv32("rv32ui-p-bgeu"); }
+void test_rv32ui_p_blt(void) { test_riscv32("rv32ui-p-blt"); }
+void test_rv32ui_p_bltu(void) { test_riscv32("rv32ui-p-bltu"); }
+void test_rv32ui_p_bne(void) { test_riscv32("rv32ui-p-bne"); }
+void test_rv32ui_p_fence_i(void) { test_riscv32("rv32ui-p-fence_i"); }
+void test_rv32ui_p_jal(void) { test_riscv32("rv32ui-p-jal"); }
+void test_rv32ui_p_jalr(void) { test_riscv32("rv32ui-p-jalr"); }
+void test_rv32ui_p_lb(void) { test_riscv32("rv32ui-p-lb"); }
+void test_rv32ui_p_lbu(void) { test_riscv32("rv32ui-p-lbu"); }
+void test_rv32ui_p_ld_st(void) { test_riscv32("rv32ui-p-ld_st"); }
+void test_rv32ui_p_lh(void) { test_riscv32("rv32ui-p-lh"); }
+void test_rv32ui_p_lhu(void) { test_riscv32("rv32ui-p-lhu"); }
+void test_rv32ui_p_lui(void) { test_riscv32("rv32ui-p-lui"); }
+void test_rv32ui_p_lw(void) { test_riscv32("rv32ui-p-lw"); }
+void test_rv32ui_p_ma_data(void) { test_riscv32("rv32ui-p-ma_data"); }
+void test_rv32ui_p_or(void) { test_riscv32("rv32ui-p-or"); }
+void test_rv32ui_p_ori(void) { test_riscv32("rv32ui-p-ori"); }
+void test_rv32ui_p_sb(void) { test_riscv32("rv32ui-p-sb"); }
+void test_rv32ui_p_sh(void) { test_riscv32("rv32ui-p-sh"); }
+void test_rv32ui_p_simple(void) { test_riscv32("rv32ui-p-simple"); }
+void test_rv32ui_p_sll(void) { test_riscv32("rv32ui-p-sll"); }
+void test_rv32ui_p_slli(void) { test_riscv32("rv32ui-p-slli"); }
+void test_rv32ui_p_slt(void) { test_riscv32("rv32ui-p-slt"); }
+void test_rv32ui_p_slti(void) { test_riscv32("rv32ui-p-slti"); }
+void test_rv32ui_p_sltiu(void) { test_riscv32("rv32ui-p-sltiu"); }
+void test_rv32ui_p_sltu(void) { test_riscv32("rv32ui-p-sltu"); }
+void test_rv32ui_p_sra(void) { test_riscv32("rv32ui-p-sra"); }
+void test_rv32ui_p_srai(void) { test_riscv32("rv32ui-p-srai"); }
+void test_rv32ui_p_srl(void) { test_riscv32("rv32ui-p-srl"); }
+void test_rv32ui_p_srli(void) { test_riscv32("rv32ui-p-srli"); }
+void test_rv32ui_p_st_ld(void) { test_riscv32("rv32ui-p-st_ld"); }
+void test_rv32ui_p_sub(void) { test_riscv32("rv32ui-p-sub"); }
+void test_rv32ui_p_sw(void) { test_riscv32("rv32ui-p-sw"); }
+void test_rv32ui_p_xor(void) { test_riscv32("rv32ui-p-xor"); }
+void test_rv32ui_p_xori(void) { test_riscv32("rv32ui-p-xori"); }
 
+#ifdef RISC_EXTENSION_M
+void test_rv32um_p_div(void) { test_riscv32("rv32um-p-div"); }
+void test_rv32um_p_divu(void) { test_riscv32("rv32um-p-divu"); }
+void test_rv32um_p_mul(void) { test_riscv32("rv32um-p-mul"); }
+void test_rv32um_p_mulh(void) { test_riscv32("rv32um-p-mulh"); }
+void test_rv32um_p_mulhsu(void) { test_riscv32("rv32um-p-mulhsu"); }
+void test_rv32um_p_mulhu(void) { test_riscv32("rv32um-p-mulhu"); }
+void test_rv32um_p_rem(void) { test_riscv32("rv32um-p-rem"); }
+void test_rv32um_p_remu(void) { test_riscv32("rv32um-p-remu"); }
+#endif // RISC_EXTENSION_M
 
 int main(void)
 {
@@ -150,6 +162,16 @@ int main(void)
     RUN_TEST(test_rv32ui_p_sw);
     RUN_TEST(test_rv32ui_p_xor);
     RUN_TEST(test_rv32ui_p_xori);
-
+    
+    #ifdef RISC_EXTENSION_M
+    RUN_TEST(test_rv32um_p_div);
+    RUN_TEST(test_rv32um_p_divu);
+    RUN_TEST(test_rv32um_p_mul);
+    RUN_TEST(test_rv32um_p_mulh);
+    RUN_TEST(test_rv32um_p_mulhsu);
+    RUN_TEST(test_rv32um_p_mulhu);
+    RUN_TEST(test_rv32um_p_rem);
+    RUN_TEST(test_rv32um_p_remu);
+    #endif // RISC_EXTENSION_M
     UNITY_END();
 }

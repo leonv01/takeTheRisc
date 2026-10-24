@@ -61,6 +61,7 @@ endforeach()
 # Copy relevant RISC-V test files into the build directory
 file(GLOB RISCV_TEST_FILES CONFIGURE_DEPENDS 
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/riscv-tests/rv32ui-p-*"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/riscv-tests/rv32um-p-*"
 )
 
 add_custom_target(copy_test_data ALL
