@@ -8,8 +8,6 @@
 
 #define MAX_CYCLES 10000
 
-#define RISC_EXTENSION_M
-
 static risc_cpu_t cpu;
 static risc_memory_t memory;
 
@@ -105,7 +103,7 @@ void test_rv32ui_p_sw(void) { test_riscv32("rv32ui-p-sw"); }
 void test_rv32ui_p_xor(void) { test_riscv32("rv32ui-p-xor"); }
 void test_rv32ui_p_xori(void) { test_riscv32("rv32ui-p-xori"); }
 
-#ifdef RISC_EXTENSION_M
+#ifdef RISCV_EXTENSION_M
 void test_rv32um_p_div(void) { test_riscv32("rv32um-p-div"); }
 void test_rv32um_p_divu(void) { test_riscv32("rv32um-p-divu"); }
 void test_rv32um_p_mul(void) { test_riscv32("rv32um-p-mul"); }
@@ -115,6 +113,10 @@ void test_rv32um_p_mulhu(void) { test_riscv32("rv32um-p-mulhu"); }
 void test_rv32um_p_rem(void) { test_riscv32("rv32um-p-rem"); }
 void test_rv32um_p_remu(void) { test_riscv32("rv32um-p-remu"); }
 #endif // RISC_EXTENSION_M
+
+#ifdef RISCV_EXTENSION_ZICSR
+void test_rv32mi_p_csr(void) { test_riscv32("rv32mi-p-csr"); }
+#endif // RISCV_EXTENSION_ZICSR
 
 int main(void)
 {
@@ -163,7 +165,7 @@ int main(void)
     RUN_TEST(test_rv32ui_p_xor);
     RUN_TEST(test_rv32ui_p_xori);
     
-    #ifdef RISC_EXTENSION_M
+    #ifdef RISCV_EXTENSION_M
     RUN_TEST(test_rv32um_p_div);
     RUN_TEST(test_rv32um_p_divu);
     RUN_TEST(test_rv32um_p_mul);
@@ -172,6 +174,11 @@ int main(void)
     RUN_TEST(test_rv32um_p_mulhu);
     RUN_TEST(test_rv32um_p_rem);
     RUN_TEST(test_rv32um_p_remu);
-    #endif // RISC_EXTENSION_M
+    #endif // RISCV_EXTENSION_M
+
+    #ifdef RISCV_EXTENSION_ZICSR
+    RUN_TEST(test_rv32mi_p_csr);
+    #endif // RISCV_EXTENSION_ZICSR
+
     UNITY_END();
 }
