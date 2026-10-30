@@ -2,10 +2,37 @@
 #include "risc/risc_memory.h"
 #include "tools/logger.h"
 
-#include <X11/Xlib.h>
 #include <stdint.h>
 #include <string.h>
 
+#define MISA_EXTENSION(x)(1u << ((x - 'A')))
+#define MISA_MXL32 1u << 30
+
+#define MSTATUS_TSR     22
+#define MSTATUS_SPP     8
+#define MSTATUS_SPIE    5
+#define MSTATUS_SIE     1
+#define MSTATUS_MPRV    17
+#define MSTATUS_MPP     11
+#define MSTATUS_MPIE    7
+#define MSTATUS_MIE     3
+
+typedef enum RISC_INSTRUCTION_TYPE 
+{
+    INSTRUCTION_ARITHMETIC_R    = 0b01100,
+    INSTRUCTION_ARITHMETIC_I    = 0b00100,
+    INSTRUCTION_LOAD            = 0b00000,
+    INSTRUCTION_STORE           = 0b01000,
+    INSTRUCTION_BRANCH          = 0b11000,
+    INSTRUCTION_JUMP_J          = 0b11011,
+    INSTRUCTION_JUMP_I          = 0b11001,
+    INSTRUCTION_UPPER_IMM       = 0b01101,
+    INSTRUCTION_UPPER_IMM_2     = 0b00101,
+    INSTRUCTION_SYSTEM          = 0b11100,
+    INSTRUCTION_AMO             = 0b01011
+} RISC_INSTRUCTION_TYPE ;
+
+/* -------------------------------------------------------------------------- */
 
 static inline int RiscOpError(risc_cpu_t *cpu, uint32_t instruction);
 
@@ -15,6 +42,7 @@ static inline uint32_t InstructionGetRs1(uint32_t instruction);
 static inline uint32_t InstructionGetRs2(uint32_t instruction);
 static inline uint32_t InstructionGetFunct3(uint32_t instruction);
 static inline uint32_t InstructionGetFunct7(uint32_t instruction);
+static inline uint32_t InstructionGetFunct12(uint32_t instruction);
 static inline uint32_t InstructionGetCsr(uint32_t instruction);
 static inline uint32_t InstructionGetImmI(uint32_t instruction);
 static inline uint32_t InstructionGetImmS(uint32_t instruction);
@@ -24,6 +52,8 @@ static inline uint32_t InstructionGetImmJ(uint32_t instruction);
 static inline uint32_t InstructionGetRl(uint32_t instruction);
 static inline uint32_t InstructionGetAq(uint32_t instruction);
 static inline uint32_t InstructionGetFunc5(uint32_t instruction);
+
+/* -------------------------------------------------------------------------- */
 
 int RiscCpuInitialize(risc_cpu_t *cpu, risc_memory_t *memory)
 {
@@ -42,24 +72,41 @@ int RiscCpuInitialize(risc_cpu_t *cpu, risc_memory_t *memory)
         cpu->instructionTypeHandler[i] = &RiscOpError;
     }
     
-    cpu->instructionTypeHandler[0b01100] = &RiscOpArithmeticR;
-    cpu->instructionTypeHandler[0b00100] = &RiscOpArithmeticI;
-    cpu->instructionTypeHandler[0b00000] = &RiscOpLoad;
-    cpu->instructionTypeHandler[0b01000] = &RiscOpStore;
-    cpu->instructionTypeHandler[0b11000] = &RiscOpBranch;
-    cpu->instructionTypeHandler[0b11011] = &RiscOpJumpJ;
-    cpu->instructionTypeHandler[0b11001] = &RiscOpJumpI;
-    cpu->instructionTypeHandler[0b01101] = &RiscOpUpperImm;
-    cpu->instructionTypeHandler[0b00101] = &RiscOpUpperImm;
-    cpu->instructionTypeHandler[0b11100] = &RiscOpSystem;
+    cpu->instructionTypeHandler[INSTRUCTION_ARITHMETIC_R] = &RiscOpArithmeticR;
+    cpu->instructionTypeHandler[INSTRUCTION_ARITHMETIC_I] = &RiscOpArithmeticI;
+    cpu->instructionTypeHandler[INSTRUCTION_LOAD] = &RiscOpLoad;
+    cpu->instructionTypeHandler[INSTRUCTION_STORE] = &RiscOpStore;
+    cpu->instructionTypeHandler[INSTRUCTION_BRANCH] = &RiscOpBranch;
+    cpu->instructionTypeHandler[INSTRUCTION_JUMP_J] = &RiscOpJumpJ;
+    cpu->instructionTypeHandler[INSTRUCTION_JUMP_I] = &RiscOpJumpI;
+    cpu->instructionTypeHandler[INSTRUCTION_UPPER_IMM] = &RiscOpUpperImm;
+    cpu->instructionTypeHandler[INSTRUCTION_UPPER_IMM_2] = &RiscOpUpperImm;
+    cpu->instructionTypeHandler[INSTRUCTION_SYSTEM] = &RiscOpSystem;
 
     #ifdef RISCV_EXTENSION_A
-    cpu->instructionTypeHandler[0b01011] = &RiscOpAmo;
+    cpu->instructionTypeHandler[INSTRUCTION_AMO] = &RiscOpAmo;
     #endif // RISCV_EXTENSION_A
 
     cpu->halted = false;
     cpu->reservationAddress = 0x00;
     cpu->reservationValid = false;
+
+    cpu->privilegeMode = RISC_PRIVILEGE_M;
+
+    cpu->csrs[RISC_CSR_MISA] = (
+        MISA_MXL32 |
+        MISA_EXTENSION('A') |
+        MISA_EXTENSION('M') |
+        MISA_EXTENSION('I') |
+        MISA_EXTENSION('S') |
+        MISA_EXTENSION('U')
+    );
+
+    cpu->csrs[RISC_CSR_MVENDORID] = 0;
+    cpu->csrs[RISC_CSR_MARCHID] = 0;
+    cpu->csrs[RISC_CSR_MIMPID] = 0;
+    cpu->csrs[RISC_CSR_MSTATUS] = 0;
+    cpu->csrs[RISC_CSR_MSTATUSH] = 0;
 
     return 0;
 }
@@ -538,20 +585,125 @@ int RiscOpSystem(risc_cpu_t *cpu, uint32_t instruction)
     uint32_t funct3 = InstructionGetFunct3(instruction);
     uint32_t rs1 = InstructionGetRs1(instruction);
     uint32_t csr = InstructionGetCsr(instruction);
+    uint32_t funct12 = InstructionGetFunct12(instruction);
     uint32_t imm = rs1;
     uint32_t *reg = &cpu->registers[0];
 
-    // ECALL
-    if (instruction == 0x00000073)
-    {
-        cpu->halted = true;
-    }
-
-    #ifdef RISCV_EXTENSION_ZICSR
     uint32_t oldValue = 0;
+
+    uint32_t mstatus;
+    uint32_t mprv;
 
     switch (funct3)
     {
+        case 0b000:
+            switch (funct12)
+            {
+                // ECALL
+                case 0b000000000000:
+                    cpu->halted = true;
+                    break;
+                // EBREAK
+                case 0b000000000001:
+                    // TODO: Handle EBREAK
+                    break;
+                // SRET
+                case 0b000100000010:
+                    if (
+                        cpu->privilegeMode < RISC_PRIVILEGE_S || 
+                        (cpu->privilegeMode == RISC_PRIVILEGE_S && (((cpu->csrs[RISC_CSR_MSTATUS] >> MSTATUS_TSR) & 0x01) == 1))
+                    )
+                    {
+                        // TODO: Handle exception
+                        break;
+                    }
+
+                    mstatus = cpu->csrs[RISC_CSR_MSTATUS];
+
+                    uint32_t spp = (mstatus >> MSTATUS_SPP) & 0x01;
+                    uint32_t spie = (mstatus >> MSTATUS_SPIE) & 0x01;
+
+                    mprv = (mstatus >> MSTATUS_MPRV) & 0x01;
+
+                    if (spp != RISC_PRIVILEGE_M)
+                    {
+                        mprv = 0;
+                    }
+
+                    cpu->privilegeMode = (RISC_PRIVILEGE_MODE) spp;
+                    spp = RISC_PRIVILEGE_U;
+
+                    // Clear SIE bit and set it afterwards
+                    mstatus &= ~(1 << MSTATUS_SIE);
+                    mstatus |= (spie << MSTATUS_SIE);
+
+                    // Set SPIE bit to 1
+                    mstatus |= (1 << MSTATUS_SPIE);
+
+                    // Clear SPP bit and set it afterwards
+                    mstatus &= ~(1 << MSTATUS_SPP);
+                    mstatus |= spp << MSTATUS_SPP;
+
+                    // Clear MPRV bit and set it afterwards
+                    mstatus &= ~(1 << MSTATUS_MPRV);
+                    mstatus |= mprv << MSTATUS_MPRV;
+
+                    cpu->csrs[RISC_CSR_MSTATUS] = mstatus;
+
+                    cpu->pc = cpu->csrs[RISC_CSR_SEPC];
+                    cpu->reservationValid = false;
+                    break;
+                    
+                // MRET
+                case 0b001100000010:
+
+                    if (cpu->privilegeMode < RISC_PRIVILEGE_M)
+                    {
+                        // TODO: Handle exception
+                        break;
+                    }
+
+                    mstatus = cpu->csrs[RISC_CSR_MSTATUS];
+
+                    uint32_t mpp = (mstatus >> MSTATUS_MPP) & 0x03;
+                    uint32_t mpie = (mstatus >> MSTATUS_MPIE) & 0x01;
+                    
+                    mprv = (mstatus >> MSTATUS_MPRV) & 0x01;
+
+                    if (mpp != RISC_PRIVILEGE_M)
+                    {
+                        mprv = 0;
+                    }
+
+                    cpu->privilegeMode = (RISC_PRIVILEGE_MODE) mpp;
+                    mpp = RISC_PRIVILEGE_U;
+
+                    mstatus &= ~(1 << MSTATUS_MIE);
+                    mstatus |= (mpie << MSTATUS_MIE);
+
+                    // Set MPIE bit to 1
+                    mstatus |= (1 << MSTATUS_MPIE);
+
+                    // Clear MPP bit and set it afterwards
+                    mstatus &= ~(3 << MSTATUS_MPP);
+                    mstatus |= mpp << MSTATUS_MPP;
+
+                    // Clear MPRV bit and set it afterwards
+                    mstatus &= ~(1 << MSTATUS_MPRV);
+                    mstatus |= mprv << MSTATUS_MPRV;
+
+                    cpu->csrs[RISC_CSR_MSTATUS] = mstatus;
+
+                    cpu->pc = cpu->csrs[RISC_CSR_MEPC];
+                    cpu->reservationValid = false;
+                    break;
+                    
+                // MNRET
+                case 0b011100000010:
+                    break;
+            }
+            break;
+        #ifdef RISCV_EXTENSION_ZICSR
         // CSRRW
         case 0b001:
             if (rd != RISC_ABI_ZERO)
@@ -628,8 +780,10 @@ int RiscOpSystem(risc_cpu_t *cpu, uint32_t instruction)
                 reg[rd] = oldValue;
             }
             break;
+        #endif // RISCV_EXTENSION_ZICSR
+        default:
+            break;
     }
-    #endif // RISCV_EXTENSION_ZICSR
 
     return 0;
 }
@@ -778,6 +932,77 @@ int RiscOpAmo(risc_cpu_t *cpu, uint32_t instruction)
     return 0;
 }
 
+void RiscEnterTrap(risc_cpu_t *cpu, RISC_TRAP_CAUSE trapCause, RISC_TRAP_TYPE trapType)
+{
+    uint32_t delegate = 0;
+    uint32_t cause = (uint32_t) trapCause;
+
+    if (trapType == RISC_TRAP_INTERRUPT)
+    {
+        delegate = cpu->csrs[RISC_CSR_MIDELEG];
+        cause |= (1 << 31);
+    }
+    else if (trapType == RISC_TRAP_EXCEPTION)
+    {
+        delegate = cpu->csrs[RISC_CSR_MEDELEG];
+    }
+
+    uint32_t mstatus = cpu->csrs[RISC_CSR_MSTATUS];
+
+    if (
+        cpu->privilegeMode <= RISC_PRIVILEGE_S &&
+        (((delegate >> trapCause) & 0x01) == 1)
+    )
+    {
+        uint32_t sie = (mstatus >> MSTATUS_SIE) & 0x01;
+
+        cpu->csrs[RISC_CSR_SCAUSE] = cause;
+        cpu->csrs[RISC_CSR_SEPC] = cpu->pc;
+        cpu->csrs[RISC_CSR_STVAL] = 0;
+
+        mstatus &= ~(1 << MSTATUS_SPIE);
+        mstatus |= (1 << MSTATUS_SPIE);
+
+        mstatus &= ~(1 << MSTATUS_SPIE);
+        mstatus |= (sie << MSTATUS_SPIE);
+
+        mstatus &= ~(1 << MSTATUS_SIE);
+        
+        mstatus &= ~(1 << MSTATUS_SPP);
+        mstatus |= (cpu->privilegeMode << MSTATUS_SPP) & 0x01;
+
+        cpu->csrs[RISC_CSR_MSTATUS] = mstatus;
+
+        cpu->privilegeMode = RISC_PRIVILEGE_S;
+
+        cpu->pc = cpu->csrs[RISC_CSR_STVEC] & ~0x03;
+    }
+    else
+    {
+        cpu->csrs[RISC_CSR_MCAUSE] = cause;
+        cpu->csrs[RISC_CSR_MEPC] = cpu->pc;
+        cpu->csrs[RISC_CSR_MTVAL] = 0;
+
+        uint32_t mie = (mstatus >> MSTATUS_MIE) & 0x01;
+
+        mstatus &= ~(1 << MSTATUS_MPIE);
+        mstatus |= (1 << MSTATUS_MPIE);
+
+        mstatus &= ~(1 << MSTATUS_MPIE);
+        mstatus |= (mie << MSTATUS_MPIE);
+
+        mstatus &= ~(1 << MSTATUS_MIE);
+
+        mstatus &= ~(3 << MSTATUS_MPP);
+        mstatus |= (cpu->privilegeMode << MSTATUS_MPP) & 0x03;
+
+        cpu->csrs[RISC_CSR_MSTATUS] = mstatus;
+
+        cpu->privilegeMode = RISC_PRIVILEGE_M;
+        cpu->pc = cpu->csrs[RISC_CSR_MTVEC] & ~0x03;
+    }
+}
+
 int RiscOpError(risc_cpu_t *cpu, uint32_t instruction)
 {
     return 0;
@@ -812,6 +1037,11 @@ uint32_t InstructionGetFunct3(uint32_t instruction)
 uint32_t InstructionGetFunct7(uint32_t instruction)
 {
     return (instruction >> 25) & 0x7F;
+}
+
+uint32_t InstructionGetFunct12(uint32_t instruction)
+{
+    return (instruction >> 20) & 0xFFF;
 }
 
 uint32_t InstructionGetCsr(uint32_t instruction)
