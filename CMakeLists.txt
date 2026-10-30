@@ -51,6 +51,7 @@ file(GLOB RISCV_TEST_FILES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/riscv-tests/rv32um-p-*"
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/riscv-tests/rv32mi-p-*"
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/riscv-tests/rv32ua-p-*"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/riscv-tests/rv32si-p-*"
 )
 
 # Automatically discover and register all tests in tests/

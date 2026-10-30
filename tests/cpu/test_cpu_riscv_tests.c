@@ -131,6 +131,13 @@ void test_rv32ua_p_amoxor(void) { test_riscv32("rv32ua-p-amoxor_w"); }
 void test_rv32ua_p_amoswap(void) { test_riscv32("rv32ua-p-amoswap_w"); }
 #endif // RISCV_EXTENSION_A 
 
+void test_rv32si_p_scall(void) { test_riscv32("rv32si-p-scall"); }
+void test_rv32si_p_csr(void) { test_riscv32("rv32si-p-csr"); }
+void test_rv32si_p_dirty(void) { test_riscv32("rv32si-p-dirty"); }
+void test_rv32si_p_ma_fetch(void) { test_riscv32("rv32si-p-ma_fetch"); }
+void test_rv32si_p_sbreak(void) { test_riscv32("rv32si-p-sbreak"); }
+void test_rv32si_p_wfi(void) { test_riscv32("rv32si-p-wfi"); }
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -206,5 +213,12 @@ int main(void)
     RUN_TEST(test_rv32ua_p_amoswap);
     #endif // RISCV_EXTENSION_A
 
+    RUN_TEST(test_rv32si_p_scall);
+    RUN_TEST(test_rv32si_p_scall);
+    RUN_TEST(test_rv32si_p_csr);
+    RUN_TEST(test_rv32si_p_dirty);
+    RUN_TEST(test_rv32si_p_ma_fetch);
+    RUN_TEST(test_rv32si_p_sbreak);
+    RUN_TEST(test_rv32si_p_wfi);
     UNITY_END();
 }

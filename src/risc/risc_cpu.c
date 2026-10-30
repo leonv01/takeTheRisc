@@ -457,6 +457,12 @@ int RiscOpStore(risc_cpu_t *cpu, uint32_t instruction)
 
     int status = 0;
 
+    if (address == RISC_ADDRESS_TOHOST && reg[rs2] != 0)
+    {
+        cpu->halted = true;
+        return 0;
+    }
+
     switch (funct3)
     {
         case 0b000:
@@ -601,11 +607,11 @@ int RiscOpSystem(risc_cpu_t *cpu, uint32_t instruction)
             {
                 // ECALL
                 case 0b000000000000:
-                    cpu->halted = true;
+                    RiscEnterTrap(cpu, (RISC_TRAP_CAUSE)(RISC_TRAP_ECALL_U_MODE + cpu->privilegeMode), RISC_TRAP_EXCEPTION);
                     break;
                 // EBREAK
                 case 0b000000000001:
-                    // TODO: Handle EBREAK
+                    RiscEnterTrap(cpu, RISC_TRAP_BREAKPOINT, RISC_TRAP_EXCEPTION);
                     break;
                 // SRET
                 case 0b000100000010:
@@ -614,7 +620,7 @@ int RiscOpSystem(risc_cpu_t *cpu, uint32_t instruction)
                         (cpu->privilegeMode == RISC_PRIVILEGE_S && (((cpu->csrs[RISC_CSR_MSTATUS] >> MSTATUS_TSR) & 0x01) == 1))
                     )
                     {
-                        // TODO: Handle exception
+                        RiscEnterTrap(cpu, RISC_TRAP_ILLEGAL_INSTRUCTION, RISC_TRAP_EXCEPTION);
                         break;
                     }
 
@@ -659,7 +665,7 @@ int RiscOpSystem(risc_cpu_t *cpu, uint32_t instruction)
 
                     if (cpu->privilegeMode < RISC_PRIVILEGE_M)
                     {
-                        // TODO: Handle exception
+                        RiscEnterTrap(cpu, RISC_TRAP_ILLEGAL_INSTRUCTION, RISC_TRAP_EXCEPTION);
                         break;
                     }
 
